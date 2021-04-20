@@ -1,0 +1,5 @@
+git+https://github.com/Rahgooy/MDFT.git@master
+numpy
+matplotlib
+profilerpy
+scipy
