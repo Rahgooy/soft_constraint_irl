@@ -69,7 +69,7 @@ def generate_trajectories(world, reward, start, terminal):
     return Demonstraition(tjs, policy)
 
 
-def generate_mdft_trajectories(world, n_r, c_r, start, terminal):
+def generate_mdft_trajectories(world, n_r, c_r, start, terminal, w):
 
     # parameters
     n_trajectories = 200
@@ -82,7 +82,7 @@ def generate_mdft_trajectories(world, n_r, c_r, start, terminal):
     # generate trajectories
     q_n, _ = RL.value_iteration(world.p_transition, n_r, discount)
     q_c, _ = RL.value_iteration(world.p_transition, c_r, discount)
-    policy_exec = T.mdft_policy_adapter(q_n, q_c, w=np.array([0.5, 0.5]))
+    policy_exec = T.mdft_policy_adapter(q_n, q_c, w=np.array(w))
     tjs = list(T.generate_trajectories(n_trajectories,
                                        world, policy_exec, initial, terminal))
 

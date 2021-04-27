@@ -46,7 +46,7 @@ def plot_world(title, game, state_rewards, action_rewards, color_rewards,
     ax = fig.add_subplot(spec[1, 10])
     P.plot_colors(ax, color_rewards, vmin=vmin, vmax=vmax)
     plt.draw()
-    return plt
+    return fig
 
 
 def config_world(blue, green, constrained_states, constrained_actions, constrained_colors, goal):
@@ -128,7 +128,7 @@ def main():
                result.color_weights, demo, c_cfg.blue, c_cfg.green, vmin=vmin, vmax=vmax)
 
     mdf_demo = generate_mdft_trajectories(
-        n.world, n.reward, result.reward, n.start, n.terminal)
+        n.world, n.reward, result.reward, n.start, n.terminal, [0.5, 0.5])
 
     plot_world('Learned Constrained - MDFT trajectories', learned, result.state_weights, result.action_weights,
                result.color_weights, mdf_demo, c_cfg.blue, c_cfg.green, vmin=vmin, vmax=vmax)
