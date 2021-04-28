@@ -68,6 +68,27 @@ def generate_trajectories(world, reward, start, terminal):
 
     return Demonstraition(tjs, policy)
 
+def generate_wighted_average_trajectories(world, n_r, c_r, start, terminal, weights):
+
+    # parameters
+    n_trajectories = 200
+    discount = 0.9
+
+    # set up initial probabilities for trajectory generation
+    initial = np.zeros(world.n_states)
+    initial[start] = 1.0
+
+    # generate trajectories
+    q_n, _ = RL.value_iteration(world.p_transition, n_r, discount)
+    q_c, _ = RL.value_iteration(world.p_transition, c_r, discount)
+    avg_q = q_n * weights[0] + q_c * weights[1]
+
+    policy = RL.stochastic_policy_from_q_value(world, avg_q)
+    policy_exec = T.stochastic_policy_adapter(policy)
+    tjs = list(T.generate_trajectories(n_trajectories,
+                                       world, policy_exec, initial, terminal))
+    return tjs
+
 
 def generate_mdft_trajectories(world, n_r, c_r, start, terminal, w):
 
