@@ -17,7 +17,7 @@ from logging import debug, root, DEBUG
 
 
 MDP = namedtuple('MDP', ['world', 'reward', 'terminal', 'start'])
-Demonstraition = namedtuple('Demonstraition', ['trajectories', 'policy'])
+Demonstration = namedtuple('Demonstration', ['trajectories', 'policy'])
 ICRL_Result = namedtuple('ICRL_Result', ['omega', 'reward',
                                          'state_weights', 'action_weights', 'color_weights'])
 
@@ -66,9 +66,9 @@ def generate_trajectories(world, reward, start, terminal):
     tjs = list(T.generate_trajectories(n_trajectories,
                                        world, policy_exec, initial, terminal))
 
-    return Demonstraition(tjs, policy)
+    return Demonstration(tjs, policy)
 
-def generate_wighted_average_trajectories(world, n_r, c_r, start, terminal, weights):
+def generate_weighted_average_trajectories(world, n_r, c_r, start, terminal, weights):
 
     # parameters
     n_trajectories = 200
@@ -87,7 +87,7 @@ def generate_wighted_average_trajectories(world, n_r, c_r, start, terminal, weig
     policy_exec = T.stochastic_policy_adapter(policy)
     tjs = list(T.generate_trajectories(n_trajectories,
                                        world, policy_exec, initial, terminal))
-    return tjs
+    return Demonstration(tjs, None)
 
 
 def generate_mdft_trajectories(world, n_r, c_r, start, terminal, w):
@@ -107,7 +107,7 @@ def generate_mdft_trajectories(world, n_r, c_r, start, terminal, w):
     tjs = list(T.generate_trajectories(n_trajectories,
                                        world, policy_exec, initial, terminal))
 
-    return Demonstraition(tjs, None)
+    return Demonstration(tjs, None)
 
 
 def learn_constraints(nominal_rewards, world, terminal, trajectories, discount=0.9):
