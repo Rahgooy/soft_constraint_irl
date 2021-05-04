@@ -49,7 +49,7 @@ def plot_world(title, game, state_rewards, action_rewards, color_rewards,
     return fig
 
 
-def config_world(blue, green, constrained_states, constrained_actions, constrained_colors, goal):
+def config_world(blue, green, constrained_states, constrained_actions, constrained_colors, goal, start=[0]):
     size = 9
     action_penalty, state_penalty, color_penalty = -50, -50, -50
     goal_r, default_reward = 10, -1
@@ -83,7 +83,7 @@ def config_world(blue, green, constrained_states, constrained_actions, constrain
 
     feature_list = [sf, af, cf]
     mdp = setup_mdp(size, feature_list, constraints, terminal=[goal], terminal_reward=goal_r,
-                    default_reward=default_reward)
+                    default_reward=default_reward, start=[start])
 
     return Config(mdp, sp, ap, cp, blue, green)
 

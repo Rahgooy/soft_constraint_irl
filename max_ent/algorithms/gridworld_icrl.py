@@ -23,7 +23,7 @@ ICRL_Result = namedtuple('ICRL_Result', ['omega', 'reward',
 
 
 def setup_mdp(size, feature_list, constraints,
-              terminal=[20], terminal_reward=10, default_reward=-0.01):
+              terminal=[20], start=[0], terminal_reward=10, default_reward=-0.01):
     # create our world
     world = W.IcyGridWorld(size=size, feature_list=feature_list,
                            allow_diagonal_actions=True, p_slip=0.1)
@@ -44,7 +44,7 @@ def setup_mdp(size, feature_list, constraints,
 
     reward[reward == 0] = default_reward
 
-    return MDP(world, reward, terminal, [0])
+    return MDP(world, reward, terminal, start)
 
 
 def generate_trajectories(world, reward, start, terminal):
