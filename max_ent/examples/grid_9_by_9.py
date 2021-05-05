@@ -19,7 +19,7 @@ Config = namedtuple('Config', ['mdp', 'state_penalties',
                                'action_penalties', 'color_penalties', 'blue', 'green'])
 
 
-def plot_world(title, game, state_rewards, action_rewards, color_rewards,
+def plot_world(title, mdp, state_rewards, action_rewards, color_rewards,
                demo, blue_states, green_states, vmin=None, vmax=None):
 
     fsize = (4.5, 3)
@@ -29,16 +29,49 @@ def plot_world(title, game, state_rewards, action_rewards, color_rewards,
     colored += [(s, 'green')for s in green_states]
 
     ax = fig.add_subplot(spec[:, :8])
-    p = P.plot_state_values(ax, game.world, state_rewards, game.start,
-                            game.terminal, colored, vmin=vmin, vmax=vmax)
+    p = P.plot_state_values(ax, mdp.world, state_rewards, mdp.start,
+                            mdp.terminal, colored, vmin=vmin, vmax=vmax)
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("left", size="5%", pad=0.1)
     cb = plt.colorbar(p, cax=cax)
     cb.ax.yaxis.set_ticks_position("left")
 
-    for t in demo.trajectories[:200]:
-        P.plot_trajectory(ax, game.world, t, lw=4,
+    for t in demo.trajectories:
+        P.plot_trajectory(ax, mdp.world, t, lw=4,
                           color='white', alpha=0.025)
+
+    ax = fig.add_subplot(spec[0, 9:12])
+    P.plot_action_rewards(ax, action_rewards, vmin=vmin, vmax=vmax)
+
+    ax = fig.add_subplot(spec[1, 10])
+    P.plot_colors(ax, color_rewards, vmin=vmin, vmax=vmax)
+    plt.draw()
+    return fig
+
+def plot_trajectory_comparison(title, mdp, state_rewards, action_rewards, color_rewards,
+               demo1, demo2, blue_states, green_states, vmin=None, vmax=None):
+
+    fsize = (4.5, 3)
+    fig = plt.figure(num=title, figsize=fsize)
+    spec = gridspec.GridSpec(ncols=12, nrows=2, figure=fig)
+    colored = [(s, 'blue') for s in blue_states]
+    colored += [(s, 'green')for s in green_states]
+
+    ax = fig.add_subplot(spec[:, :8])
+    p = P.plot_state_values(ax, mdp.world, state_rewards, mdp.start,
+                            mdp.terminal, colored, vmin=vmin, vmax=vmax)
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("left", size="5%", pad=0.1)
+    cb = plt.colorbar(p, cax=cax)
+    cb.ax.yaxis.set_ticks_position("left")
+
+    for t in demo1.trajectories:
+        P.plot_trajectory(ax, mdp.world, t, lw=4,
+                          color='white', alpha=0.025)
+
+    for t in demo2.trajectories:
+        P.plot_trajectory(ax, mdp.world, t, lw=4,
+                          color='red', alpha=0.025)
 
     ax = fig.add_subplot(spec[0, 9:12])
     P.plot_action_rewards(ax, action_rewards, vmin=vmin, vmax=vmax)
