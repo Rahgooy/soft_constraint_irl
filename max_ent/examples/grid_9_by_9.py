@@ -67,7 +67,7 @@ def plot_trajectory_comparison(title, mdp, state_rewards, action_rewards, color_
 
     for t in demo1.trajectories:
         P.plot_trajectory(ax, mdp.world, t, lw=4,
-                          color='white', alpha=0.025)
+                          color='blue', alpha=0.025)
 
     for t in demo2.trajectories:
         P.plot_trajectory(ax, mdp.world, t, lw=4,
