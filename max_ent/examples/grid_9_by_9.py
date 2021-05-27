@@ -116,7 +116,7 @@ def config_world(blue, green, constrained_states, constrained_actions, constrain
 
     feature_list = [sf, af, cf]
     mdp = setup_mdp(size, feature_list, constraints, terminal=[goal], terminal_reward=goal_r,
-                    default_reward=default_reward, start=[start])
+                    default_reward=default_reward, start=start)
 
     return Config(mdp, sp, ap, cp, blue, green)
 
