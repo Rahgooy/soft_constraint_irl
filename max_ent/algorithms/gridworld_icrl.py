@@ -23,10 +23,10 @@ ICRL_Result = namedtuple('ICRL_Result', ['omega', 'reward',
 
 
 def setup_mdp(size, feature_list, constraints,
-              terminal=[20], start=[0], terminal_reward=10, default_reward=-0.01):
+              terminal=[20], start=[0], terminal_reward=10, default_reward=-0.01, p_slip=0.1):
     # create our world
     world = W.IcyGridWorld(size=size, feature_list=feature_list,
-                           allow_diagonal_actions=True, p_slip=0.1)
+                           allow_diagonal_actions=True, p_slip=p_slip)
     # set up the reward function
     reward = np.zeros((world.n_states, world.n_actions, world.n_states))
     reward[:, :, terminal] = terminal_reward

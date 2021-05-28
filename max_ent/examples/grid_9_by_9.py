@@ -103,7 +103,7 @@ def config_world(blue, green, constrained_states, constrained_actions, constrain
         sp[s] = state_penalty
 
     # Action penalties
-    ap = {a: 0 for a in Directions.ALL_DIRECTIONS}
+    ap = {a: -1 for a in Directions.ALL_DIRECTIONS}
     for a in constrained_actions:
         constraints.append((af, a.idx, action_penalty))
         ap[a] = action_penalty
