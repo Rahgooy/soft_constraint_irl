@@ -96,7 +96,7 @@ def config_world(blue, green, constrained_states, constrained_actions, constrain
 
     # Destination state penalties
     constraints = []
-    sp = np.ones(size**2) * default_reward
+    sp = np.zeros(size**2)
     sp[goal] = goal_r
     for s in constrained_states:
         constraints.append((sf, s, state_penalty))
