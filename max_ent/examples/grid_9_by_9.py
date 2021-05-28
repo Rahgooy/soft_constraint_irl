@@ -48,8 +48,9 @@ def plot_world(title, mdp, state_rewards, action_rewards, color_rewards,
     plt.draw()
     return fig
 
+
 def plot_trajectory_comparison(title, mdp, state_rewards, action_rewards, color_rewards,
-               demo1, demo2, blue_states, green_states, vmin=None, vmax=None):
+                               demo1, demo2, blue_states, green_states, vmin=None, vmax=None):
 
     fsize = (4.5, 3)
     fig = plt.figure(num=title, figsize=fsize)
@@ -82,7 +83,7 @@ def plot_trajectory_comparison(title, mdp, state_rewards, action_rewards, color_
     return fig
 
 
-def config_world(blue, green, constrained_states, constrained_actions, constrained_colors, goal, start=[0]):
+def config_world(blue, green, constrained_states, constrained_actions, constrained_colors, goal, start=[0], p_slip=0.1):
     size = 9
     action_penalty, state_penalty, color_penalty = -50, -50, -50
     goal_r, default_reward = 10, -1
@@ -116,7 +117,7 @@ def config_world(blue, green, constrained_states, constrained_actions, constrain
 
     feature_list = [sf, af, cf]
     mdp = setup_mdp(size, feature_list, constraints, terminal=[goal], terminal_reward=goal_r,
-                    default_reward=default_reward, start=start)
+                    default_reward=default_reward, start=start, p_slip=p_slip)
 
     return Config(mdp, sp, ap, cp, blue, green)
 
