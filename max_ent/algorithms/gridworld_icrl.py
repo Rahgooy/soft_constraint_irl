@@ -47,12 +47,11 @@ def setup_mdp(size, feature_list, constraints,
     return MDP(world, reward, terminal, start)
 
 
-def generate_trajectories(world, reward, start, terminal):
+def generate_trajectories(world, reward, start, terminal, n_trajectories=200):
     """
     Generate some "expert" trajectories.
     """
     # parameters
-    n_trajectories = 200
     discount = 0.9
 
     # set up initial probabilities for trajectory generation

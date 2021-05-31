@@ -66,7 +66,7 @@ class Trajectory:
         return "{}".format(self._t)
 
 
-def generate_trajectory(world, policy, start, final):
+def generate_trajectory(world, policy, start, final, max_len=200):
     """
     Generate a single trajectory.
 
@@ -90,7 +90,7 @@ def generate_trajectory(world, policy, start, final):
     state = start
 
     trajectory = []
-    while state not in final:
+    while state not in final and len(trajectory) < max_len:
         action = policy(state)
 
         next_s = range(world.n_states)
@@ -196,5 +196,5 @@ def mdft_policy_adapter(nominal_q, constrained_q, w=None, delib_t=100):
         mdft = MDFT(M, S, w, p0)
         dist = get_fixed_T_dft_dist(mdft, 1, delib_t)
         return np.argmax(dist)
-    
+
     return policy
