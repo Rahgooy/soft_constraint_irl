@@ -5,6 +5,12 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Generate random 9 by 9",
+      "type": "python",
+      "request": "launch",
+      "module": "max_ent.examples.generate_random_games"
+    },
+    {
       "name": "9 by 9",
       "type": "python",
       "request": "launch",

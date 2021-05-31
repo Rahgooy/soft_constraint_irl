@@ -3,6 +3,7 @@
 from logging import debug, root, DEBUG
 from collections import namedtuple, defaultdict
 import math
+import random
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
@@ -48,8 +49,9 @@ def plot_world(title, mdp, state_rewards, action_rewards, color_rewards,
     plt.draw()
     return fig
 
+
 def plot_trajectory_comparison(title, mdp, state_rewards, action_rewards, color_rewards,
-               demo1, demo2, blue_states, green_states, vmin=None, vmax=None):
+                               demo1, demo2, blue_states, green_states, vmin=None, vmax=None):
 
     fsize = (4.5, 3)
     fig = plt.figure(num=title, figsize=fsize)
@@ -82,9 +84,10 @@ def plot_trajectory_comparison(title, mdp, state_rewards, action_rewards, color_
     return fig
 
 
-def config_world(blue, green, constrained_states, constrained_actions, constrained_colors, goal, start=[0]):
+def config_world(blue, green, constrained_states, constrained_actions, constrained_colors, goal,
+                 penalty=-50, start=[0], p_slip=0.1, dist_penalty=True):
     size = 9
-    action_penalty, state_penalty, color_penalty = -50, -50, -50
+    action_penalty, state_penalty, color_penalty = penalty, penalty, penalty
     goal_r, default_reward = 10, -1
 
     # set-up the mdp
@@ -96,17 +99,20 @@ def config_world(blue, green, constrained_states, constrained_actions, constrain
 
     # Destination state penalties
     constraints = []
-    sp = np.ones(size**2) * default_reward
+    sp = np.zeros(size**2)
     sp[goal] = goal_r
     for s in constrained_states:
         constraints.append((sf, s, state_penalty))
         sp[s] = state_penalty
 
     # Action penalties
-    ap = {a: 0 for a in Directions.ALL_DIRECTIONS}
-    for a in constrained_actions:
-        constraints.append((af, a.idx, action_penalty))
-        ap[a] = action_penalty
+    ap = {a: -4 * (np.sqrt(a.x**2 + a.y**2) if dist_penalty else 1)
+          for a in Directions.ALL_DIRECTIONS}
+    for a in ap:
+        if a in constrained_actions:
+            ap[a] = action_penalty
+
+        constraints.append((af, a.idx, ap[a]))
 
     # Color
     cp = np.zeros(3)
@@ -115,10 +121,51 @@ def config_world(blue, green, constrained_states, constrained_actions, constrain
         cp[c] = color_penalty
 
     feature_list = [sf, af, cf]
-    mdp = setup_mdp(size, feature_list, constraints, terminal=[goal], terminal_reward=goal_r,
-                    default_reward=default_reward, start=[start])
+    goal = goal if isinstance(goal, list) or isinstance(
+        goal, np.ndarray) else [goal]
+    start = start if isinstance(start, list) or isinstance(
+        start, np.ndarray) else [start]
+    mdp = setup_mdp(size, feature_list, constraints, terminal=goal, terminal_reward=goal_r,
+                    default_reward=default_reward, start=start, p_slip=p_slip)
 
     return Config(mdp, sp, ap, cp, blue, green)
+
+
+def generate_random_config(min_dist_start_goal=5, p_slip=0.1, penalty=-50, dist_penalty=False):
+    n_const = 8
+    # generate the list of non-constrained states
+    list_available = [x for x in range(81)]
+
+    blue = np.random.choice(list_available, n_const)  # blue states
+    # remove blue states from the list of non-constrained states
+    list_available = np.setdiff1d(list_available, blue)
+
+    green = np.random.choice(list_available, n_const)  # green states
+    # remove green states from the list of non-constrained states
+    list_available = np.setdiff1d(list_available, green)
+
+    cs = np.random.choice(list_available, n_const)  # constrained states
+    # remove constrained states from the list of non-constrained states
+    list_available = np.setdiff1d(list_available, cs)
+
+    random_ca = np.random.choice(8, 2)  # green states
+    ca = [Directions.ALL_DIRECTIONS[d] for d in random_ca]
+
+    cc = [1, 2]
+
+    start = random.choice(list_available)
+    # generate terminal state from the list of non-constrained states
+    goal = random.choice(list_available)
+    while (start % 9 - goal % 9)**2  + (start/9 - goal/9)**2 < min_dist_start_goal**2:
+        start = random.choice(list_available)
+        goal = random.choice(list_available)
+
+    n_cfg = config_world(blue, green, [], [], [], goal, dist_penalty=dist_penalty,
+                         start=start, p_slip=p_slip, penalty=penalty)
+    c_cfg = config_world(blue, green, cs, ca, cc, goal, dist_penalty=dist_penalty,
+                         start=start, p_slip=p_slip, penalty=penalty)
+
+    return n_cfg, c_cfg
 
 
 def main():
