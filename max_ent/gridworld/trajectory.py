@@ -23,7 +23,7 @@ class Trajectory:
     """
 
     def __init__(self, transitions):
-        self._t = transitions
+        self._t = list(transitions)
 
     def transitions(self):
         """
@@ -33,7 +33,7 @@ class Trajectory:
             All transitions in this trajectory as array of tuples
             `(state_from, action, state_to)`.
         """
-        return self._t
+        return list(self._t)
 
     def states(self):
         """

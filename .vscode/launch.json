@@ -5,6 +5,12 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Run 9 by 9 on data",
+      "type": "python",
+      "request": "launch",
+      "module": "max_ent.examples.run"
+    },  
+    {
       "name": "Generate random 9 by 9",
       "type": "python",
       "request": "launch",

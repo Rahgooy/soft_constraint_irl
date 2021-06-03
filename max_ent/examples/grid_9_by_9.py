@@ -85,10 +85,10 @@ def plot_trajectory_comparison(title, mdp, state_rewards, action_rewards, color_
 
 
 def config_world(blue, green, constrained_states, constrained_actions, constrained_colors, goal,
-                 penalty=-50, start=[0], p_slip=0.1, dist_penalty=True):
+                 penalty=-50, start=[0], p_slip=0.1, dist_penalty=True, default_reward=-4):
     size = 9
     action_penalty, state_penalty, color_penalty = penalty, penalty, penalty
-    goal_r, default_reward = 10, -1
+    goal_r = 10
 
     # set-up the mdp
     sf = F.DistinationStateFeature(size**2)
@@ -106,7 +106,7 @@ def config_world(blue, green, constrained_states, constrained_actions, constrain
         sp[s] = state_penalty
 
     # Action penalties
-    ap = {a: -4 * (np.sqrt(a.x**2 + a.y**2) if dist_penalty else 1)
+    ap = {a: default_reward * (np.sqrt(a.x**2 + a.y**2) if dist_penalty else 1)
           for a in Directions.ALL_DIRECTIONS}
     for a in ap:
         if a in constrained_actions:
@@ -125,30 +125,33 @@ def config_world(blue, green, constrained_states, constrained_actions, constrain
         goal, np.ndarray) else [goal]
     start = start if isinstance(start, list) or isinstance(
         start, np.ndarray) else [start]
-    mdp = setup_mdp(size, feature_list, constraints, terminal=goal, terminal_reward=goal_r,
-                    default_reward=default_reward, start=start, p_slip=p_slip)
+    mdp = setup_mdp(size, feature_list, constraints, terminal=goal,
+                    terminal_reward=goal_r, start=start, p_slip=p_slip)
 
     return Config(mdp, sp, ap, cp, blue, green)
 
 
 def generate_random_config(min_dist_start_goal=5, p_slip=0.1, penalty=-50, dist_penalty=False):
-    n_const = 8
+    n_const = 6
     # generate the list of non-constrained states
     list_available = [x for x in range(81)]
 
-    blue = np.random.choice(list_available, n_const)  # blue states
+    blue = np.random.choice(list_available, n_const,
+                            replace=False)  # blue states
     # remove blue states from the list of non-constrained states
     list_available = np.setdiff1d(list_available, blue)
 
-    green = np.random.choice(list_available, n_const)  # green states
+    green = np.random.choice(list_available, n_const,
+                             replace=False)  # green states
     # remove green states from the list of non-constrained states
     list_available = np.setdiff1d(list_available, green)
 
-    cs = np.random.choice(list_available, n_const)  # constrained states
+    cs = np.random.choice(list_available, n_const,
+                          replace=False)  # constrained states
     # remove constrained states from the list of non-constrained states
     list_available = np.setdiff1d(list_available, cs)
 
-    random_ca = np.random.choice(8, 2)  # green states
+    random_ca = np.random.choice(8, 2, replace=False)
     ca = [Directions.ALL_DIRECTIONS[d] for d in random_ca]
 
     cc = [1, 2]
@@ -156,7 +159,7 @@ def generate_random_config(min_dist_start_goal=5, p_slip=0.1, penalty=-50, dist_
     start = random.choice(list_available)
     # generate terminal state from the list of non-constrained states
     goal = random.choice(list_available)
-    while (start % 9 - goal % 9)**2  + (start/9 - goal/9)**2 < min_dist_start_goal**2:
+    while (start % 9 - goal % 9)**2 + (start/9 - goal/9)**2 < min_dist_start_goal**2:
         start = random.choice(list_available)
         goal = random.choice(list_available)
 

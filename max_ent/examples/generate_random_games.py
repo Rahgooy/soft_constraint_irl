@@ -1,41 +1,37 @@
 from max_ent.gridworld.gridworld import Directions
-from max_ent.examples.grid_9_by_9 import generate_random_config, generate_trajectories
+from max_ent.examples.grid_9_by_9 import config_world, generate_random_config, generate_trajectories
 import numpy as np
 import json
 from pathlib import Path
 
-if __name__ == '__main__':
-    N = 100
+
+def generate_random():
+    N = 10
     games = []
     i = 0
     while i < N:
         n_cfg, c_cfg = generate_random_config(
             min_dist_start_goal=8, p_slip=0, penalty=-50, dist_penalty=True)
         trj = generate_trajectories(c_cfg.mdp.world, c_cfg.mdp.reward, c_cfg.mdp.start,
-                                    c_cfg.mdp.terminal).trajectories
-        state_seq = []
-        action_seq = []
-        violation = False
+                                    c_cfg.mdp.terminal, n_trajectories=10).trajectories
+        path_to_goal = 0
+        # Check if goal is achievable
         for t in trj:
-            states = []
-            actions = []
-            prevS = None
+            violation = False
+            last = None
             for s, a in t.state_actions():
-                if prevS == s:
-                    continue
-                prevS = s
-                states.append(int(s))
-                actions.append(int(a))
-                action = Directions.ALL_DIRECTIONS[a]
-                if c_cfg.state_penalties[s] == -50 or c_cfg.action_penalties[action] == -50:
+                s_ = c_cfg.mdp.world.state_index_transition(s, a)
+                last = s
+                if c_cfg.mdp.reward[s, a, s_] < -10:  # Violation
                     violation = True
                     break
-            state_seq.append(states)
-            action_seq.append(actions)
-            if violation:
+
+            path_to_goal += 0 if violation or last != c_cfg.mdp.terminal[0] else 1
+
+            if path_to_goal > 5:
                 break
 
-        if violation:
+        if path_to_goal <= 3:
             print('.', end='')
             continue
 
@@ -48,13 +44,44 @@ if __name__ == '__main__':
             'state_reward': c_cfg.state_penalties.tolist(),
             'action_reward': [c_cfg.action_penalties[a] for a in Directions.ALL_DIRECTIONS],
             'color_reward': c_cfg.color_penalties.tolist(),
-            'state_seq': state_seq,
-            'action_seq': action_seq,
         })
         print(i+1)
         i += 1
 
-    out = Path("./data/deterministic_data.json")
+    out = Path(f"./data/deterministic_data_{N}.json")
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open('w') as f:
-        json.dump(games, f, indent=4)
+        json.dump(games, f, indent=4)    
+
+
+def scobee_example():
+    goal = 8
+    blue = [4, 13, 22]  # blue states
+    green = [58, 67, 76]  # green states
+    cs = [31, 39, 41, 47, 51]  # constrained states
+    ca = [Directions.UP_LEFT, Directions.UP_RIGHT]  # constrained actions
+    cc = [1, 2]  # constrained colors
+
+    n_cfg = config_world(blue, green, [], [], [], goal)
+    c_cfg = config_world(blue, green, cs, ca, cc, goal)
+    n, c = n_cfg.mdp, c_cfg.mdp
+
+    games = [{
+        'game': 1,
+        'start': int(c_cfg.mdp.start[0]),
+        'goal': int(c_cfg.mdp.terminal[0]),
+        'blue': c_cfg.blue,
+        'green': c_cfg.green,
+        'state_reward': c_cfg.state_penalties.tolist(),
+        'action_reward': [c_cfg.action_penalties[a] for a in Directions.ALL_DIRECTIONS],
+        'color_reward': c_cfg.color_penalties.tolist(),
+    }]
+
+    out = Path(f"./data/scobee_example_data.json")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with out.open('w') as f:
+        json.dump(games, f, indent=4)  
+
+if __name__ == '__main__':
+    scobee_example()
+

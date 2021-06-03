@@ -107,6 +107,8 @@ def icrl(nominal_rewards, p_transition, features, terminal, trajectories, optim,
 
     optim.reset(omega)
     epoch = 0
+    best = None
+    best_error = 100000
     while epoch < burnout or (delta > eps and mean_error > eps_error and epoch < max_iter):
         theta_old = omega.copy()
 
@@ -125,14 +127,18 @@ def icrl(nominal_rewards, p_transition, features, terminal, trajectories, optim,
 
         mean_error = np.abs(grad).mean()
 
+        if epoch >= burnout and mean_error < best_error:
+            best = omega.copy()
+            best_error = mean_error
+
         # perform optimization step and compute delta for convergence
         optim.step(grad)
         delta = np.max(np.abs(theta_old - omega))
         if epoch % 100 == 0:
-            print(f'{epoch + 1: 10d}: DELTA: {delta: 0.5f}, MAE: {mean_error: 0.15f}')
+            print(f'MAE(best): {min(mean_error, best_error): 0.15f}')
         epoch += 1
 
-    return omega
+    return best if best is not None else omega
 
 
 def _softmax(x1, x2):

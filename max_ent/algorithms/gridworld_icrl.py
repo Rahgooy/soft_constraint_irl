@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from max_ent.gridworld.gridworld import Directions
 import max_ent.gridworld as W
 from max_ent.algorithms import rl as RL
 from max_ent.algorithms import icrl as ICRL
@@ -23,7 +24,7 @@ ICRL_Result = namedtuple('ICRL_Result', ['omega', 'reward',
 
 
 def setup_mdp(size, feature_list, constraints,
-              terminal=[20], start=[0], terminal_reward=10, default_reward=-0.01, p_slip=0.1):
+              terminal=[20], start=[0], terminal_reward=10, p_slip=0.1):
     # create our world
     world = W.IcyGridWorld(size=size, feature_list=feature_list,
                            allow_diagonal_actions=True, p_slip=p_slip)
@@ -41,8 +42,6 @@ def setup_mdp(size, feature_list, constraints,
         idx = world.phi[:, :, :, offset[f]: offset[f] + f.size] == f.value2feature(v)
         idx = idx.all(-1)
         reward[idx] += r
-
-    reward[reward == 0] = default_reward
 
     return MDP(world, reward, terminal, start)
 
@@ -66,6 +65,7 @@ def generate_trajectories(world, reward, start, terminal, n_trajectories=200):
                                        world, policy_exec, initial, terminal))
 
     return Demonstration(tjs, policy)
+
 
 def generate_weighted_average_trajectories(world, n_r, c_r, start, terminal, weights):
 
@@ -123,3 +123,44 @@ def learn_constraints(nominal_rewards, world, terminal, trajectories, discount=0
     omage_color = -omega[world.n_states + world.n_actions:]
 
     return ICRL_Result(omega, reward, omega_state, omega_action, omage_color)
+
+
+def convert_constraints_to_probs(nominal_reward, learned_params):
+    std_n = nominal_reward.std()
+    std_l = learned_params.reward.std()
+    std_pooled = np.sqrt((std_n**2 + std_l**2)/2)
+
+    def convert_to_probs(w):
+        w = -w.copy()  # reward -> penalty
+        w = (w - std_pooled) / std_pooled
+        return 1 / (1 + np.exp(-w))
+
+    w_s = learned_params.state_weights
+    p_s = convert_to_probs(w_s)
+
+    keys = list(learned_params.action_weights.keys())
+    w_a = np.array([learned_params.action_weights[a] for a in keys])
+    p_a = convert_to_probs(w_a)
+    p_a = {keys[i]: p_a[i] for i in range(8)}
+
+    w_c = learned_params.color_weights
+    p_c = convert_to_probs(w_c)
+
+    return p_s, p_a, p_c
+
+def convert_constraints_to_probs2(n_cfg, learned_params):
+    pen = n_cfg.mdp.world.phi @ learned_params.omega
+    std_n = n_cfg.mdp.reward.std()
+    std_l = learned_params.reward.std()
+    std_pooled = np.sqrt((std_n**2 + std_l**2)/2)    
+    pen = (pen - std_pooled) / std_pooled
+    p = 1 / (1 + np.exp(-pen))
+    p_s = p.mean((0, 1))
+    p_a = p.mean((0, 2))
+    p_c = np.array([0, p[:, :, n_cfg.blue].mean(), p[:, :, n_cfg.green].mean()])
+    p_s[n_cfg.blue] = np.minimum(1 - p_c[1], p_s[n_cfg.blue])
+    p_s[n_cfg.green] = np.minimum(1 - p_c[2], p_s[n_cfg.green])
+    p_s[n_cfg.mdp.start] = 0
+    p_s[n_cfg.mdp.terminal] = 0
+    p_a = {Directions.ALL_DIRECTIONS[i]: p_a[i] for i in range(8)}
+    return p_s, p_a, p_c    
