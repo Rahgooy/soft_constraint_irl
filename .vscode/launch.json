@@ -4,6 +4,7 @@
   // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
+
     {
       "name": "Run 9 by 9 on data",
       "type": "python",
@@ -16,6 +17,12 @@
       "request": "launch",
       "module": "max_ent.examples.generate_random_games"
     },
+    {
+      "name": "compare trajs",
+      "type": "python",
+      "request": "launch",
+      "module": "max_ent.examples.compare_trajectories"
+    },    
     {
       "name": "9 by 9",
       "type": "python",
