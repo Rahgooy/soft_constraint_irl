@@ -6,10 +6,10 @@
   "configurations": [
 
     {
-      "name": "Run 9 by 9 on data",
+      "name": "Learn hard constraints",
       "type": "python",
       "request": "launch",
-      "module": "max_ent.examples.run"
+      "module": "max_ent.examples.learn_hard_constraints"
     },  
     {
       "name": "Generate random 9 by 9",
@@ -18,10 +18,10 @@
       "module": "max_ent.examples.generate_random_games"
     },
     {
-      "name": "compare trajs",
+      "name": "Compare hard results",
       "type": "python",
       "request": "launch",
-      "module": "max_ent.examples.compare_trajectories"
+      "module": "max_ent.examples.compare_hard_results"
     },    
     {
       "name": "9 by 9",

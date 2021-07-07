@@ -39,7 +39,7 @@ def setup_mdp(size, feature_list, constraints,
         o += f.size
 
     for f, v, r in constraints:
-        idx = world.phi[:, :, :, offset[f]: offset[f] + f.size] == f.value2feature(v)
+        idx = world.phi[:, :, :, offset[f]                        : offset[f] + f.size] == f.value2feature(v)
         idx = idx.all(-1)
         reward[idx] += r
 
@@ -58,8 +58,36 @@ def generate_trajectories(world, reward, start, terminal, n_trajectories=200):
     initial[start] = 1.0
 
     # generate trajectories
-    q, _ = RL.value_iteration(world.p_transition, reward, discount)
-    policy = RL.stochastic_policy_from_q_value(world, q)
+    policy = ICRL.backward_causal(
+        world.p_transition, reward, terminal, discount)
+    policy_exec = T.stochastic_policy_adapter(policy)
+    tjs = list(T.generate_trajectories(n_trajectories,
+                                       world, policy_exec, initial, terminal))
+
+    return Demonstration(tjs, policy)
+
+
+def generate_hard_trajectories(world, reward, start, terminal, state_cons, action_cons, n_trajectories=200):
+    """
+    Generate some "expert" trajectories.
+    """
+    # parameters
+    discount = 0.9
+
+    # set up initial probabilities for trajectory generation
+    initial = np.zeros(world.n_states)
+    initial[start] = 1.0
+
+    # generate trajectories
+    policy = ICRL.backward_causal(
+        world.p_transition, reward, terminal, discount)
+    for s in range(81):
+        for a in range(8):
+            s_ = world.state_index_transition(s, a)
+            if s_ in state_cons:
+                policy[s, a] = 0
+    policy[:, action_cons] = 0
+    policy = policy/policy.sum(1).reshape(-1, 1)
     policy_exec = T.stochastic_policy_adapter(policy)
     tjs = list(T.generate_trajectories(n_trajectories,
                                        world, policy_exec, initial, terminal))
@@ -148,19 +176,21 @@ def convert_constraints_to_probs(nominal_reward, learned_params):
 
     return p_s, p_a, p_c
 
+
 def convert_constraints_to_probs2(n_cfg, learned_params):
     pen = n_cfg.mdp.world.phi @ learned_params.omega
     std_n = n_cfg.mdp.reward.std()
     std_l = learned_params.reward.std()
-    std_pooled = np.sqrt((std_n**2 + std_l**2)/2)    
+    std_pooled = np.sqrt((std_n**2 + std_l**2)/2)
     pen = (pen - std_pooled) / std_pooled
     p = 1 / (1 + np.exp(-pen))
     p_s = p.mean((0, 1))
     p_a = p.mean((0, 2))
-    p_c = np.array([0, p[:, :, n_cfg.blue].mean(), p[:, :, n_cfg.green].mean()])
+    p_c = np.array([0, p[:, :, n_cfg.blue].mean(),
+                    p[:, :, n_cfg.green].mean()])
     p_s[n_cfg.blue] = np.minimum(1 - p_c[1], p_s[n_cfg.blue])
     p_s[n_cfg.green] = np.minimum(1 - p_c[2], p_s[n_cfg.green])
     p_s[n_cfg.mdp.start] = 0
     p_s[n_cfg.mdp.terminal] = 0
     p_a = {Directions.ALL_DIRECTIONS[i]: p_a[i] for i in range(8)}
-    return p_s, p_a, p_c    
+    return p_s, p_a, p_c
