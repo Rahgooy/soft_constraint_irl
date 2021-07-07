@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 lens = list(range(1, 10)) + list(range(10, 101, 10))
 
 def main():
+    np.random.seed(123)
     thresholds = [0.4, 0.5, 0.6, 0.7]
     with open('data/scobee_example_data.json') as f:
         data = json.load(f)

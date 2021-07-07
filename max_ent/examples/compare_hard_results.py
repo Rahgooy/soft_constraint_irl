@@ -1,11 +1,9 @@
-from max_ent.algorithms.gridworld_icrl import generate_hard_trajectories
-from max_ent.examples.grid_9_by_9 import config_world
 from max_ent.gridworld.gridworld import Directions
 from typing import NamedTuple
 import numpy as np
 from pathlib import Path
 import json
-from numpy.lib.arraysetops import intersect1d, setdiff1d
+from numpy.lib.arraysetops import setdiff1d
 from scipy.spatial import distance
 import math
 from collections import namedtuple
@@ -57,6 +55,7 @@ def get_predicted_cons(data):
             cons[i][j] = Constraints(state_cons, action_cons, feature_cons)
     return cons
 
+
 def fp(true, x):
     N = len(x.state) + len(x.action) + len(x.feature)
     fs = len(setdiff1d(x.state, true.state))
@@ -91,22 +90,25 @@ def get_stats(true_cons, pred_cons, true_demo, pred_demo):
 
     return fp_list, kl_list
 
+
 def draw_line(x, y, std, color, label):
     lwidth = 0.6
     plt.plot(x, y, 'k', color=color, marker='o', fillstyle='none',
-            linewidth=lwidth, markersize=5, markeredgewidth=lwidth, label=label)
+             linewidth=lwidth, markersize=5, markeredgewidth=lwidth, label=label)
     plt.fill_between(lens, (y-std).clip(0), y + std, alpha=0.2,
-                    facecolor=color, linewidth=lwidth, antialiased=True)
+                     facecolor=color, linewidth=lwidth, antialiased=True)
+
 
 def draw_diagram(scobee, our, y_label):
     plt.figure()
     draw_line(lens, scobee.mean(0), scobee.std(0), 'blue', 'Scobee')
     for i in range(len(thresholds)):
-        draw_line(lens, our[i].mean(0), our[i].std(0), colors[i], f'Proposed($p\geq{thresholds[i]}$)')
+        draw_line(lens, our[i].mean(0), our[i].std(0),
+                  colors[i], f'Proposed($p\geq{thresholds[i]}$)')
     plt.legend()
     plt.xlabel('Number of Demonstrations')
     plt.ylabel(y_label)
-    plt.grid()    
+    plt.grid()
 
 
 true_cons = get_true_cons()
