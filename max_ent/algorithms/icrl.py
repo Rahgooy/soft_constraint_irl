@@ -90,7 +90,7 @@ def ef_from_trajectories(features, trajectories):
 
 
 def icrl(nominal_rewards, p_transition, features, terminal, trajectories, optim, init, discount,
-                 eps=1e-4, eps_error=1e-2, burnout=100, max_iter=10000):
+         eps=1e-4, eps_error=1e-2, burnout=100, max_iter=10000, max_penalty=200):
 
     n_states, n_actions, _, n_features = features.shape
 
@@ -133,6 +133,11 @@ def icrl(nominal_rewards, p_transition, features, terminal, trajectories, optim,
 
         # perform optimization step and compute delta for convergence
         optim.step(grad)
+
+        if omega.max() > max_penalty:
+            omega = omega * (max_penalty / omega.max())
+            optim.reset(omega)
+
         delta = np.max(np.abs(theta_old - omega))
         if epoch % 100 == 0:
             print(f'MAE(best): {min(mean_error, best_error): 0.15f}')

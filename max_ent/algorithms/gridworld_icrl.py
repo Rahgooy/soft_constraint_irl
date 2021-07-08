@@ -39,7 +39,7 @@ def setup_mdp(size, feature_list, constraints,
         o += f.size
 
     for f, v, r in constraints:
-        idx = world.phi[:, :, :, offset[f]                        : offset[f] + f.size] == f.value2feature(v)
+        idx = world.phi[:, :, :, offset[f]: offset[f] + f.size] == f.value2feature(v)
         idx = idx.all(-1)
         reward[idx] += r
 
@@ -137,12 +137,13 @@ def generate_mdft_trajectories(world, n_r, c_r, start, terminal, w):
     return Demonstration(tjs, None)
 
 
-def learn_constraints(nominal_rewards, world, terminal, trajectories, discount=0.9):
+def learn_constraints(nominal_rewards, world, terminal, trajectories,
+                      discount=0.9, clip_grad_at=10, lr=0.3, max_iter=500):
     init = O.Constant(1e-6)
-    optim = O.ExpSga(lr=0.3, clip_grad_at=10)
+    optim = O.ExpSga(lr=lr, clip_grad_at=clip_grad_at)
 
     omega = ICRL.icrl(nominal_rewards, world.p_transition, world.phi,
-                      terminal, trajectories, optim, init, discount, max_iter=500)
+                      terminal, trajectories, optim, init, discount, max_iter=max_iter)
 
     reward = nominal_rewards - world.phi @ omega
     omega_action = {a: -omega[world.n_states + i]

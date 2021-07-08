@@ -39,7 +39,7 @@ def plot_world(title, mdp, state_rewards, action_rewards, color_rewards,
 
     for t in demo.trajectories:
         P.plot_trajectory(ax, mdp.world, t, lw=4,
-                          color='white', alpha=0.025)
+                          color='white', alpha=min(1, 5/len(demo.trajectories)))
 
     ax = fig.add_subplot(spec[0, 9:12])
     P.plot_action_rewards(ax, action_rewards, vmin=vmin, vmax=vmax)

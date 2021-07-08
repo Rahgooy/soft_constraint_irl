@@ -90,7 +90,16 @@ def generate_trajectory(world, policy, start, final, max_len=200):
     state = start
 
     trajectory = []
-    while state not in final and len(trajectory) < max_len:
+    trial = 0
+    while state not in final:
+        if len(trajectory) > max_len:  # Reset and create a new trajectory
+            if trial >= 5:
+                print('Warning: terminated trajectory generation due to unreachable final state.')
+                break
+            trajectory = []
+            state = start
+            trial += 1
+
         action = policy(state)
 
         next_s = range(world.n_states)
@@ -98,7 +107,7 @@ def generate_trajectory(world, policy, start, final, max_len=200):
 
         next_state = np.random.choice(next_s, p=next_p)
 
-        trajectory += [(state, action, next_state)]
+        trajectory.append((state, action, next_state))
         state = next_state
 
     return Trajectory(trajectory)
