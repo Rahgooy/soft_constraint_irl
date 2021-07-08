@@ -4,13 +4,19 @@
   // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
+    {
+      "name": "Learn soft constraints",
+      "type": "python",
+      "request": "launch",
+      "module": "max_ent.examples.learn_soft_constraints"
+    },
 
     {
       "name": "Learn hard constraints",
       "type": "python",
       "request": "launch",
       "module": "max_ent.examples.learn_hard_constraints"
-    },  
+    },
     {
       "name": "Generate random 9 by 9",
       "type": "python",
@@ -22,12 +28,12 @@
       "type": "python",
       "request": "launch",
       "module": "max_ent.examples.compare_hard_results"
-    },    
+    },
     {
       "name": "9 by 9",
       "type": "python",
       "request": "launch",
       "module": "max_ent.examples.grid_9_by_9"
-    },
+    }
   ]
 }
