@@ -9,6 +9,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.tri as tri
 from matplotlib import colors
+from matplotlib.collections import PatchCollection
+from matplotlib.patches import Rectangle
+import matplotlib
 
 
 def plot_state_values(ax, world, values, start, goal, colored=[], **kwargs):
@@ -26,6 +29,7 @@ def plot_state_values(ax, world, values, start, goal, colored=[], **kwargs):
         All further key-value arguments will be forwarded to
         `pyplot.imshow`.
     """
+    print(kwargs)
     p = ax.imshow(np.reshape(values, (world.size, world.size)),
                   origin='lower', **kwargs)
     ax.axis('off')
@@ -91,22 +95,22 @@ def plot_action_rewards(ax, actions_rewards, **kwargs):
 
 
 def plot_colors(ax, vals, **kwargs):
-    p = ax.imshow(vals.reshape(-1, 1), origin='lower', **kwargs)
+    p = plt.imshow(vals.reshape(-1, 1), origin='lower', **kwargs)
+    cmap = p.cmap
+    p = ax.imshow(np.zeros_like(vals.reshape(-1, 1)), origin='lower', **kwargs)
     ax.axis('off')
 
     size = 1
-    ax.text(0.6 * size, -0.1 * size, 'No color', size=8, fontweight='bold')
-    ax.text(0.6 * size, 0.9 * size, 'Blue', size=8,
+    ax.text(0.8 * size, -0.1 * size, 'No color', size=8, fontweight='bold')
+    ax.text(0.8 * size, 0.9 * size, 'Blue', size=8,
             color='blue', fontweight='bold')
-    ax.text(0.6 * size, 1.9 * size, 'Green', size=8,
+    ax.text(0.8 * size, 1.9 * size, 'Green', size=8,
             color='green', fontweight='bold')
 
-    x = 0.5 * size
-    for i in range(len(vals) + 1):
-        y = (i-0.5) * size
-        ax.plot([-x, x], [y, y], c='black', lw=0.7)
-
-    ax.plot([-x, -x], [-x, (len(vals) - 0.5) * size], c='black', lw=0.7)
-    ax.plot([x, x], [-x, (len(vals) - 0.5) * size], c='black', lw=0.7)
+    eps = 0.05
+    ax.add_patch(Rectangle((-0.5, 0.5), size, size-eps,
+                           edgecolor='blue', facecolor=cmap(p.norm(vals[1])), lw=3))
+    ax.add_patch(Rectangle((-0.5, 1.5 + eps), size, size - 2*eps,
+                           edgecolor='green', facecolor=cmap(p.norm(vals[2])), lw=3))
 
     return p

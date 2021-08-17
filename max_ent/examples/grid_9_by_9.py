@@ -23,6 +23,7 @@ Config = namedtuple('Config', ['mdp', 'state_penalties',
 def plot_world(title, mdp, state_rewards, action_rewards, color_rewards,
                demo, blue_states, green_states, vmin=None, vmax=None):
 
+    cm = plt.cm.afmhot
     fsize = (4.5, 3)
     fig = plt.figure(num=title, figsize=fsize)
     spec = gridspec.GridSpec(ncols=12, nrows=2, figure=fig)
@@ -31,7 +32,7 @@ def plot_world(title, mdp, state_rewards, action_rewards, color_rewards,
 
     ax = fig.add_subplot(spec[:, :8])
     p = P.plot_state_values(ax, mdp.world, state_rewards, mdp.start,
-                            mdp.terminal, colored, vmin=vmin, vmax=vmax)
+                            mdp.terminal, colored, vmin=vmin, vmax=vmax, cmap=cm)
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("left", size="5%", pad=0.1)
     cb = plt.colorbar(p, cax=cax)
@@ -42,10 +43,10 @@ def plot_world(title, mdp, state_rewards, action_rewards, color_rewards,
                           color='white', alpha=min(1, 5/len(demo.trajectories)))
 
     ax = fig.add_subplot(spec[0, 9:12])
-    P.plot_action_rewards(ax, action_rewards, vmin=vmin, vmax=vmax)
+    P.plot_action_rewards(ax, action_rewards, vmin=vmin, vmax=vmax, cmap=cm)
 
     ax = fig.add_subplot(spec[1, 10])
-    P.plot_colors(ax, color_rewards, vmin=vmin, vmax=vmax)
+    P.plot_colors(ax, color_rewards, vmin=vmin, vmax=vmax, cmap=cm)
     plt.draw()
     return fig
 
