@@ -109,7 +109,7 @@ def icrl(nominal_rewards, p_transition, features, terminal, trajectories, optim,
     epoch = 0
     best = None
     best_error = 100000
-    while epoch < burnout or (delta > eps and mean_error > eps_error and epoch < max_iter):
+    while epoch <= burnout or (delta > eps and mean_error > eps_error and epoch < max_iter):
         theta_old = omega.copy()
 
         # compute per-state reward
@@ -142,6 +142,8 @@ def icrl(nominal_rewards, p_transition, features, terminal, trajectories, optim,
         if epoch % 100 == 0:
             print(f'MAE(best): {min(mean_error, best_error): 0.15f}')
         epoch += 1
+
+    print(f'Finished with MAE(best): {best_error: 0.15f}')
 
     return best if best is not None else omega
 
