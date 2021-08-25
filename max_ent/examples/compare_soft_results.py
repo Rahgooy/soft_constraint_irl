@@ -101,9 +101,6 @@ def get_results(d, r, p_slip):
     # Generate demonstrations
     demo = generate_trajectories(
         c.world, c.reward, c.start, c.terminal, n_trajectories=100)
-    # plot_world('Original Constrained', c, c_cfg.state_penalties,
-    #            c_cfg.action_penalties, c_cfg.color_penalties,
-    #            demo, c_cfg.blue, c_cfg.green, vmin=-50, vmax=10)
 
     for i in range(N):
         for j, result in enumerate(r[i]):
@@ -113,11 +110,7 @@ def get_results(d, r, p_slip):
             learned_demo = generate_trajectories(
                 n.world, learned.reward, n.start, n.terminal, n_trajectories=100)
 
-            # plot_world('Learned Constrained', learned, result.state_weights, result.action_weights,
-            #            result.color_weights, demo, c_cfg.blue, c_cfg.green, vmin=-50, vmax=10)
-            # plt.show()
             p_learned = get_probs(n.reward, result)
-
             kl_list[i, j] = kl(demo.trajectories, learned_demo.trajectories)
             for (f, t) in mae_list:
                 mae_list[f, t][i, j] = mae(
