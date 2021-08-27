@@ -19,7 +19,7 @@ plots = [
     # Like false positive
     PlotSetting('zero', 'over', 'fp', True, False, True, False),
     PlotSetting('non-zero', 'under', 'fn', True,
-                True, True, False),  # Like false negative
+                False, True, False),  # Like false negative
 ]
 p_thresholds = [0.01, 0.05, 0.1, 0.2]
 
@@ -32,11 +32,14 @@ def dist(demo):
     return dist/dist.sum().reshape(-1, 1)
 
 
-def kl(true, x):
-    true_dist = dist(true)
-    x_dist = dist(x)
-    kl = true_dist * np.log(true_dist/x_dist)
-    return kl.sum()
+def jsd(x, y):
+    def kl(p, q):
+        kl = p * np.log2(p/q)
+        return kl.sum()
+    p = dist(x)
+    q = dist(y)
+    m = (p + q) / 2
+    return (kl(p, m) + kl(q, m))/2
 
 
 def mae(true, learned, p_true, p_learned, filter, type, eps=0.01):
@@ -96,15 +99,14 @@ def get_results(d, r, p_slip):
         'az_mae': [np.zeros((N, len(lens))) for _ in p_thresholds],
         'az_count': [np.zeros((N, len(lens))) for _ in p_thresholds],
     } for k in plots}
-    kl_list = np.zeros((N, len(lens)))
-
+    jsd_list = np.zeros((N, len(lens)))
 
     for i in range(N):
         for j, result in enumerate(r[i]):
             # Generate demonstrations
             demo = generate_trajectories(
                 c.world, c.reward, c.start, c.terminal, n_trajectories=100)
-            
+
             result = convert_to_icrl_result(
                 result['omega'], n.world, result['reward'])
             learned = MDP(n.world, result.reward, n.terminal, n.start)
@@ -112,7 +114,7 @@ def get_results(d, r, p_slip):
                 n.world, learned.reward, n.start, n.terminal, n_trajectories=100)
 
             p_learned = get_probs(n.reward, result)
-            kl_list[i, j] = kl(demo.trajectories, learned_demo.trajectories)
+            jsd_list[i, j] = jsd(demo.trajectories, learned_demo.trajectories)
             for plt_s in plot_list:
                 plt_r = plot_list[plt_s]
                 m = plt_r['mae']
@@ -124,14 +126,14 @@ def get_results(d, r, p_slip):
                     m[k][i, j] = mae(true_result.omega,
                                      result.omega, p_true, p_learned, plt_s.filter, plt_s.type, eps=t)
                     cnt[k][i, j] = count(true_result.omega,
-                                       p_true, p_learned, plt_s.filter, plt_s.type, eps=t)
+                                         p_true, p_learned, plt_s.filter, plt_s.type, eps=t)
 
                     az_m[k][i, j] = mae(true_result.omega,
                                         az_result.omega, p_true, p_az, plt_s.filter, plt_s.type, eps=t)
                     az_c[k][i, j] = count(true_result.omega,
                                           p_true, p_az, plt_s.filter, plt_s.type, eps=t)
 
-    return kl_list, plot_list
+    return jsd_list, plot_list
 
 
 def get_configs(d, p_slip):
@@ -171,7 +173,8 @@ def draw_metric(x, y, sem, y_label, labels, filename, az=None):
         plt.fill_between(lens, (y[i, :] - sem[i, :]).clip(0), y[i, :] + sem[i, :], alpha=0.2,
                          facecolor=colors[i], linewidth=lwidth, antialiased=True)
     if az:
-        plt.axhline(y=az, color='black', linestyle='--', label='no constraint prediction')
+        plt.axhline(y=az, color='black', linestyle='--',
+                    label='no constraint prediction')
     plt.xlabel('Number of Demonstrations')
     if len(labels) > 1:
         plt.legend()
@@ -181,10 +184,10 @@ def draw_metric(x, y, sem, y_label, labels, filename, az=None):
     plt.close()
 
 
-def draw_result(kl_list, plot_list, exp_name):
-    draw_metric(lens, kl_list['mean'].reshape(1, -1),
-                np.sqrt(kl_list['var']).reshape(1, -1), 'KL-Divergence',
-                [''], f'{exp_name}_kl')
+def draw_result(jsd_list, plot_list, exp_name):
+    draw_metric(lens, jsd_list['mean'].reshape(1, -1),
+                np.sqrt(jsd_list['var']).reshape(1, -1), 'JS-Divergence',
+                [''], f'{exp_name}_jsd')
 
     for k in plot_list:
         p = plot_list[k]
@@ -207,17 +210,18 @@ def draw_result(kl_list, plot_list, exp_name):
             if k.p_thresholds:
                 l = '' if metric == 'count' else 'Mean Absolute Error'
                 if k.type == 'over':
-                    l = '$P_{pred} - P_{true} >$ '
+                    l = '$\chi = $ '
                     if metric == 'count':
                         title = 'Soft False Positive Rate'
 
                 if k.type == 'under':
-                    l = '$P_{true} - P_{pred} <$ '
+                    l = '$\chi = $ '
                     if metric == 'count':
                         title = 'Soft False Negative Rate'
-                    az = p['az_count']['mean'][0][0]
-
                 labels = [l + f'${t}$' for t in p_thresholds]
+
+            if k.add_all_zero:
+                az = p['az_count']['mean'][0][0]
 
             draw_metric(lens, mean_, sem_,
                         title, labels,
@@ -233,16 +237,17 @@ def draw_reports(name, deter):
     with open(f'results/soft/{name}.pkl', 'rb') as f:
         results = pickle.load(f)
 
-    kl_list = {'mean': 0, 'var': 0}
+    jsd_list = {'mean': 0, 'var': 0}
     plt_list = {}
-    n = len(results)
+    n_games = len(results)
     n_thresholds = len(p_thresholds)
 
     for i, r in enumerate(results):
-        kl_, plt_result = get_results(data[i], r, p_slip)
-        kl_list['mean'] += kl_.mean(0)
+        jsd_, plt_result = get_results(data[i], r, p_slip)
+        jsd_list['mean'] += jsd_.mean(0) / n_games
         # convert to variance for pooled st calculation. Equal sample sizes
-        kl_list['var'] += stats.sem(kl_, 0) ** 2 / n
+        # st_pooling**2 = (st_1**2 + ... + st_n**2)/k, k is the number of samples
+        jsd_list['var'] += stats.sem(jsd_, 0) ** 2 / n_games
 
         for k in plt_result:
             r = plt_result[k]
@@ -255,11 +260,12 @@ def draw_reports(name, deter):
                 }
             for i, t in enumerate(p_thresholds if k.p_thresholds else [0]):
                 for metric in plt_list[k]:
-                    plt_list[k][metric]['mean'][i] += r[metric][i].mean(0) / n
+                    plt_list[k][metric]['mean'][i] += r[metric][i].mean(
+                        0) / n_games
                     plt_list[k][metric]['var'][i] += stats.sem(
-                        r[metric][i]) ** 2 / n
+                        r[metric][i]) ** 2 / n_games
 
-    draw_result(kl_list, plt_list, name)
+    draw_result(jsd_list, plt_list, name)
 
 
 def main():
