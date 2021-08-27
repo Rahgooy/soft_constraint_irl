@@ -66,9 +66,9 @@ def main():
 
     print('Running scobee example ...')
     run('data/scobee_example_data.json',
-        'results/soft/scobee_deter.pkl', True)
+        'results/soft/scobee_example_data_deter.pkl', True)
     run('data/scobee_example_data.json',
-        'results/soft/scobee_non_deter.pkl', False)
+        'results/soft/scobee_example_data_non_deter.pkl', False)
 
     print('Done!')
 

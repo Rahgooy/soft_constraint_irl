@@ -10,16 +10,16 @@ import pickle
 from scipy import stats
 
 PlotSetting = namedtuple('PlotSetting', [
-    'filter', 'type', 'name', 'p_thresholds', 'add_all_zero', 'count', 'mae'])
+    'filter', 'type', 'name', 'p_thresholds', 'count', 'mae'])
 
 lens = list(range(1, 10)) + list(range(10, 101, 10))
 colors = ['purple', 'red', 'orange', 'green']
 
 plots = [
     # Like false positive
-    PlotSetting('zero', 'over', 'fp', True, False, True, False),
+    PlotSetting('zero', 'over', 'fp', True, True, False),
     PlotSetting('non-zero', 'under', 'fn', True,
-                False, True, False),  # Like false negative
+                True, False),  # Like false negative
 ]
 p_thresholds = [0.01, 0.05, 0.1, 0.2]
 
@@ -83,7 +83,6 @@ def get_results(d, r, p_slip):
 
     omega = np.zeros(81 + 8 + 3)
     az_result = convert_to_icrl_result(omega, n.world, n.reward)
-    p_az = get_probs(n.reward, az_result)
 
     omega[cs] = -np.array(d['state_reward'])[cs]
     omega[81 + ca_idx] = -np.array(d['action_reward'])[ca_idx]
@@ -92,18 +91,21 @@ def get_results(d, r, p_slip):
     true_result = convert_to_icrl_result(omega, n.world, c.reward)
     p_true = get_probs(n.reward, true_result)
 
+    demo = generate_trajectories(
+        c.world, c.reward, c.start, c.terminal, n_trajectories=100)
+    az_demo = generate_trajectories(
+        c.world, az_result.reward, n.start, n.terminal, n_trajectories=100)
+    az_jsd = jsd(demo.trajectories, az_demo.trajectories)
+
     N = len(r)
     plot_list = {k: {
         'mae': [np.zeros((N, len(lens))) for _ in p_thresholds],
         'count': [np.zeros((N, len(lens))) for _ in p_thresholds],
-        'az_mae': [np.zeros((N, len(lens))) for _ in p_thresholds],
-        'az_count': [np.zeros((N, len(lens))) for _ in p_thresholds],
     } for k in plots}
     jsd_list = np.zeros((N, len(lens)))
 
     for i in range(N):
         for j, result in enumerate(r[i]):
-            # Generate demonstrations
             demo = generate_trajectories(
                 c.world, c.reward, c.start, c.terminal, n_trajectories=100)
 
@@ -119,8 +121,6 @@ def get_results(d, r, p_slip):
                 plt_r = plot_list[plt_s]
                 m = plt_r['mae']
                 cnt = plt_r['count']
-                az_m = plt_r['az_mae']
-                az_c = plt_r['az_count']
                 T = p_thresholds if plt_s.p_thresholds else [0]
                 for k, t in enumerate(T):
                     m[k][i, j] = mae(true_result.omega,
@@ -128,12 +128,7 @@ def get_results(d, r, p_slip):
                     cnt[k][i, j] = count(true_result.omega,
                                          p_true, p_learned, plt_s.filter, plt_s.type, eps=t)
 
-                    az_m[k][i, j] = mae(true_result.omega,
-                                        az_result.omega, p_true, p_az, plt_s.filter, plt_s.type, eps=t)
-                    az_c[k][i, j] = count(true_result.omega,
-                                          p_true, p_az, plt_s.filter, plt_s.type, eps=t)
-
-    return jsd_list, plot_list
+    return jsd_list, plot_list, az_jsd
 
 
 def get_configs(d, p_slip):
@@ -172,22 +167,27 @@ def draw_metric(x, y, sem, y_label, labels, filename, az=None):
                  linewidth=lwidth, markersize=5, markeredgewidth=lwidth, label=labels[i])
         plt.fill_between(lens, (y[i, :] - sem[i, :]).clip(0), y[i, :] + sem[i, :], alpha=0.2,
                          facecolor=colors[i], linewidth=lwidth, antialiased=True)
-    if az:
-        plt.axhline(y=az, color='black', linestyle='--',
-                    label='no constraint prediction')
-    plt.xlabel('Number of Demonstrations')
     if len(labels) > 1:
         plt.legend()
+
+    if az:
+        plt.axhline(y=az, color='r', ls='--', label='no constraint prediction')
+        plt.legend()
+
+
+    plt.xlabel('Number of Demonstrations')
     plt.ylabel(y_label)
-    plt.grid()
+
+    plt.grid(axis='both', which='major', ls='--', lw=0.5)
     plt.savefig(f'./reports/soft/{filename}_soft.pdf')
     plt.close()
 
 
-def draw_result(jsd_list, plot_list, exp_name):
+def draw_result(jsd_list, az_jsd, plot_list, exp_name):
+
     draw_metric(lens, jsd_list['mean'].reshape(1, -1),
                 np.sqrt(jsd_list['var']).reshape(1, -1), 'JS-Divergence',
-                [''], f'{exp_name}_jsd')
+                ['Proposed method'], f'{exp_name}_jsd', az_jsd)
 
     for k in plot_list:
         p = plot_list[k]
@@ -206,7 +206,6 @@ def draw_result(jsd_list, plot_list, exp_name):
 
             labels = ['']
             title = ''
-            az = None
             if k.p_thresholds:
                 l = '' if metric == 'count' else 'Mean Absolute Error'
                 if k.type == 'over':
@@ -220,12 +219,9 @@ def draw_result(jsd_list, plot_list, exp_name):
                         title = 'Soft False Negative Rate'
                 labels = [l + f'${t}$' for t in p_thresholds]
 
-            if k.add_all_zero:
-                az = p['az_count']['mean'][0][0]
-
             draw_metric(lens, mean_, sem_,
                         title, labels,
-                        f'{exp_name}_{metric}_{k.type}', az)
+                        f'{exp_name}_{metric}_{k.type}')
 
 
 def draw_reports(name, deter):
@@ -241,10 +237,12 @@ def draw_reports(name, deter):
     plt_list = {}
     n_games = len(results)
     n_thresholds = len(p_thresholds)
+    az_jsd = 0
 
     for i, r in enumerate(results):
-        jsd_, plt_result = get_results(data[i], r, p_slip)
+        jsd_, plt_result, az_ = get_results(data[i], r, p_slip)
         jsd_list['mean'] += jsd_.mean(0) / n_games
+        az_jsd += az_ / n_games
         # convert to variance for pooled st calculation. Equal sample sizes
         # st_pooling**2 = (st_1**2 + ... + st_n**2)/k, k is the number of samples
         jsd_list['var'] += stats.sem(jsd_, 0) ** 2 / n_games
@@ -255,8 +253,6 @@ def draw_reports(name, deter):
                 plt_list[k] = {
                     'mae': {'mean': [0] * n_thresholds, 'var': [0] * n_thresholds},
                     'count': {'mean': [0] * n_thresholds, 'var': [0] * n_thresholds},
-                    'az_mae': {'mean': [0] * n_thresholds, 'var': [0] * n_thresholds},
-                    'az_count': {'mean': [0] * n_thresholds, 'var': [0] * n_thresholds},
                 }
             for i, t in enumerate(p_thresholds if k.p_thresholds else [0]):
                 for metric in plt_list[k]:
@@ -265,10 +261,12 @@ def draw_reports(name, deter):
                     plt_list[k][metric]['var'][i] += stats.sem(
                         r[metric][i]) ** 2 / n_games
 
-    draw_result(jsd_list, plt_list, name)
+    draw_result(jsd_list, az_jsd, plt_list, name)
 
 
 def main():
+    draw_reports('scobee_example_data', True)
+    draw_reports('scobee_example_data', False)
     draw_reports('random_data_10', True)
     draw_reports('random_data_10', False)
     print('Done!')

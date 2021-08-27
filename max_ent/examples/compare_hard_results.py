@@ -100,7 +100,7 @@ def draw_diagram(scobee, our, y_label, lens, thresholds, idx, draw_scobee=True):
     plt.legend()
     plt.xlabel('Number of Demonstrations')
     plt.ylabel(y_label)
-    plt.grid()
+    plt.grid(axis='both', which='major', ls='--', lw=0.5)
 
 
 def main():
