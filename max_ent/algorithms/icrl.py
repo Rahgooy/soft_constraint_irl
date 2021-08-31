@@ -143,6 +143,8 @@ def icrl(nominal_rewards, p_transition, features, terminal, trajectories, optim,
             print(f'MAE(best): {min(mean_error, best_error): 0.15f}')
         epoch += 1
 
+    print(f'Finished with MAE(best): {best_error: 0.15f}')
+
     return best if best is not None else omega
 
 

@@ -36,7 +36,7 @@ def main():
                     soft_demos[i].append(learned[i, l, t]['soft_demo'])
                     hard_demos[i].append(learned[i, l, t]['hard_demo'])
 
-            with open(f'data/our_results_scobee_example_t{t}.json', 'w') as f:
+            with open(f'results/hard/our_results_scobee_example_t{t}.json', 'w') as f:
                 json.dump([{
                     'id': d['game'],
                     'learned_constraints': cons,

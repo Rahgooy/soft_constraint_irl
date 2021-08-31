@@ -28,10 +28,10 @@ def generate_random():
 
             path_to_goal += 0 if violation or last != c_cfg.mdp.terminal[0] else 1
 
-            if path_to_goal > 5:
+            if path_to_goal >= 3:  # Found enough paths to the goal
                 break
 
-        if path_to_goal <= 3:
+        if path_to_goal < 3:
             print('.', end='')
             continue
 
@@ -47,11 +47,10 @@ def generate_random():
         })
         print(i+1)
         i += 1
-
-    out = Path(f"./data/deterministic_data_{N}.json")
+    out = Path(f"./data/random_data_{N}.json")
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open('w') as f:
-        json.dump(games, f, indent=4)    
+        json.dump(games, f, indent=4)
 
 
 def scobee_example():
@@ -62,11 +61,8 @@ def scobee_example():
     ca = [Directions.UP_LEFT, Directions.UP_RIGHT]  # constrained actions
     cc = [1, 2]  # constrained colors
 
-    n_cfg = config_world(blue, green, [], [], [], goal)
     c_cfg = config_world(blue, green, cs, ca, cc, goal)
-    n, c = n_cfg.mdp, c_cfg.mdp
-
-    games = [{
+    game = {
         'game': 1,
         'start': int(c_cfg.mdp.start[0]),
         'goal': int(c_cfg.mdp.terminal[0]),
@@ -75,13 +71,15 @@ def scobee_example():
         'state_reward': c_cfg.state_penalties.tolist(),
         'action_reward': [c_cfg.action_penalties[a] for a in Directions.ALL_DIRECTIONS],
         'color_reward': c_cfg.color_penalties.tolist(),
-    }]
+    }
 
     out = Path(f"./data/scobee_example_data.json")
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open('w') as f:
-        json.dump(games, f, indent=4)  
+        json.dump([game], f, indent=4)
+
 
 if __name__ == '__main__':
     scobee_example()
-
+    np.random.seed(123)
+    generate_random()

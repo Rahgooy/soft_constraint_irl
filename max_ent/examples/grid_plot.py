@@ -97,7 +97,7 @@ def plot_action_rewards(ax, actions_rewards, **kwargs):
 def plot_colors(ax, vals, **kwargs):
     p = plt.imshow(vals.reshape(-1, 1), origin='lower', **kwargs)
     cmap = p.cmap
-    p = ax.imshow(np.zeros_like(vals.reshape(-1, 1)), origin='lower', **kwargs)
+    p = ax.imshow(vals.reshape(-1, 1), origin='lower', **kwargs)
     ax.axis('off')
 
     size = 1

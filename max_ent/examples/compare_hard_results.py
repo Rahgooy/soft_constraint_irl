@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 Constraints = namedtuple('Constraints', ['state', 'action', 'feature'])
+colors = ['red', 'orange', 'purple', 'green']
 
 
 def load_data(path):
@@ -20,17 +21,7 @@ def load_data(path):
     return r
 
 
-true_trj = load_data("./data/scobee_example_trajectories.json")
-true_data = load_data("./data/scobee_example_data.json")
-scobee = load_data("./data/scobee_results_scobee_example.json")
-lens = list(range(1, 10)) + list(range(10, 101, 10))
-thresholds = [0.4, 0.5, 0.6, 0.7]
-colors = ['red', 'orange', 'purple', 'green']
-n_len = len(lens)
-n_set = 10
-
-
-def get_true_cons():
+def get_true_cons(true_data):
     state_cons = np.argwhere(
         np.array(true_data['state_reward']) <= -50).squeeze()
     action_cons = np.argwhere(
@@ -41,7 +32,7 @@ def get_true_cons():
     return Constraints(state_cons, action_cons, feature_cons)
 
 
-def get_predicted_cons(data):
+def get_predicted_cons(data, n_set, n_len):
     learned = data['learned_constraints']
     cons = []
     for i in range(n_set):
@@ -80,7 +71,7 @@ def kl(true, x):
     return kl.sum()
 
 
-def get_stats(true_cons, pred_cons, true_demo, pred_demo):
+def get_stats(true_cons, pred_cons, true_demo, pred_demo, n_set, n_len):
     fp_list = np.zeros((n_set, n_len))
     kl_list = np.zeros((n_set, n_len))
     for i in range(n_set):
@@ -91,7 +82,7 @@ def get_stats(true_cons, pred_cons, true_demo, pred_demo):
     return fp_list, kl_list
 
 
-def draw_line(x, y, std, color, label):
+def draw_line(x, y, std, color, label, lens):
     lwidth = 0.6
     plt.plot(x, y, 'k', color=color, marker='o', fillstyle='none',
              linewidth=lwidth, markersize=5, markeredgewidth=lwidth, label=label)
@@ -99,34 +90,60 @@ def draw_line(x, y, std, color, label):
                      facecolor=color, linewidth=lwidth, antialiased=True)
 
 
-def draw_diagram(scobee, our, y_label):
+def draw_diagram(scobee, our, y_label, lens, thresholds, idx, draw_scobee=True):
     plt.figure()
-    draw_line(lens, scobee.mean(0), scobee.std(0), 'blue', 'Scobee')
-    for i in range(len(thresholds)):
+    if draw_scobee:
+        draw_line(lens, scobee.mean(0), scobee.std(0), 'blue', 'Scobee', lens)
+    for i in idx:
         draw_line(lens, our[i].mean(0), our[i].std(0),
-                  colors[i], f'Proposed($p\geq{thresholds[i]}$)')
+                  colors[i], f'Proposed($p\geq{thresholds[i]}$)', lens)
     plt.legend()
     plt.xlabel('Number of Demonstrations')
     plt.ylabel(y_label)
-    plt.grid()
+    plt.grid(axis='both', which='major', ls='--', lw=0.5)
 
 
-true_cons = get_true_cons()
-scobee_cons = get_predicted_cons(scobee)
-true_demo = true_trj['trajs']
-scobee_demo = scobee['demos']
+def main():
+    true_trj = load_data("./data/scobee_example_trajectories.json")
+    true_data = load_data("./data/scobee_example_data.json")
+    scobee = load_data("./data/scobee_results_scobee_example.json")
+    thresholds = [0.4, 0.5, 0.6, 0.7]
+    idx = [0, 1, 2, 3]
+    lens = list(range(1, 10)) + list(range(10, 101, 10))
+    n_len = len(lens)
+    n_set = 10
 
-s_fp, s_kl = get_stats(true_cons, scobee_cons, true_demo, scobee_demo)
-o_fp, o_kl = [0] * len(thresholds), [0] * len(thresholds)
-for i, t in enumerate(thresholds):
-    our = load_data(f"./data/our_results_scobee_example_t{t}.json")
-    our_cons = get_predicted_cons(our)
-    our_hard_demo = our['hard_demos']
-    our_soft_demo = our['soft_demos']
-    o_fp[i], o_kl[i] = get_stats(true_cons, our_cons, true_demo, our_hard_demo)
+    true_cons = get_true_cons(true_data)
+    scobee_cons = get_predicted_cons(scobee, n_set, n_len)
+    true_demo = true_trj['trajs']
+    scobee_demo = scobee['demos']
+
+    s_fp, s_kl = get_stats(true_cons, scobee_cons,
+                           true_demo, scobee_demo, n_set, n_len)
+    o_fp, o_kl = [0] * len(thresholds), [0] * len(thresholds)
+    for i, t in enumerate(thresholds):
+        our = load_data(f"./results/hard/our_results_scobee_example_t{t}.json")
+        our_cons = get_predicted_cons(our, n_set, n_len)
+        our_hard_demo = our['hard_demos']
+        o_fp[i], o_kl[i] = get_stats(
+            true_cons, our_cons, true_demo, our_hard_demo, n_set, n_len)
+
+    draw_diagram(s_fp, o_fp, 'False Positive Rate', lens,
+                 thresholds, idx, draw_scobee=False)
+    plt.savefig('./reports/hard/hard_all_fp.pdf')
+
+    draw_diagram(s_kl, o_kl, 'KL-Divergence', lens,
+                 thresholds, idx, draw_scobee=False)
+    plt.savefig('./reports/hard/hard_all_kl.pdf')
+
+    draw_diagram(s_fp, o_fp, 'False Positive Rate',
+                 lens, thresholds, [2], draw_scobee=True)
+    plt.savefig('./reports/hard/hard_best_fp.pdf')
+    
+    draw_diagram(s_kl, o_kl, 'KL-Divergence', lens,
+                 thresholds, [2], draw_scobee=True)
+    plt.savefig('./reports/hard/hard_best_kl.pdf')
 
 
-draw_diagram(s_fp, o_fp, 'False Positive Rate')
-plt.savefig('./results/hard_fp.pdf')
-draw_diagram(s_kl, o_kl, 'KL-Divergence')
-plt.savefig('./results/hard_kl.pdf')
+if __name__ == "__main__":
+    main()
