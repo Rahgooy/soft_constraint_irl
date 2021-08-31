@@ -95,7 +95,7 @@ def generate_trajectory(world, policy, start, final, max_len=200):
         if len(trajectory) > max_len:  # Reset and create a new trajectory
             if trial >= 5:
                 print('Warning: terminated trajectory generation due to unreachable final state.')
-                break
+                return Trajectory(trajectory), False    #break
             trajectory = []
             state = start
             trial += 1
@@ -110,7 +110,7 @@ def generate_trajectory(world, policy, start, final, max_len=200):
         trajectory.append((state, action, next_state))
         state = next_state
 
-    return Trajectory(trajectory)
+    return Trajectory(trajectory), True
 
 
 def generate_trajectories(n, world, policy, start, final):
@@ -151,7 +151,14 @@ def generate_trajectories(n, world, policy, start, final):
 
         return generate_trajectory(world, policy, s, final)
 
-    return (_generate_one() for _ in range(n))
+    list_tr = []
+    for _ in range(n):
+        tr = _generate_one()
+        if not tr[1]: return False
+        list_tr.append(tr[0])
+    
+    return list_tr
+    #return (_generate_one() for _ in range(n))
 
 
 def policy_adapter(policy):

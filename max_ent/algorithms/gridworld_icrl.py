@@ -61,9 +61,9 @@ def generate_trajectories(world, reward, start, terminal, n_trajectories=200):
     policy = ICRL.backward_causal(
         world.p_transition, reward, terminal, discount)
     policy_exec = T.stochastic_policy_adapter(policy)
-    tjs = list(T.generate_trajectories(n_trajectories,
-                                       world, policy_exec, initial, terminal))
+    tjs = T.generate_trajectories(n_trajectories,world, policy_exec, initial, terminal)
 
+    if not tjs: return False
     return Demonstration(tjs, policy)
 
 
