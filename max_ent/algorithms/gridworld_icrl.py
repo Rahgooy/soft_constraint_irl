@@ -61,9 +61,11 @@ def generate_trajectories(world, reward, start, terminal, n_trajectories=200):
     policy = ICRL.backward_causal(
         world.p_transition, reward, terminal, discount)
     policy_exec = T.stochastic_policy_adapter(policy)
-    tjs = T.generate_trajectories(n_trajectories,world, policy_exec, initial, terminal)
+    tjs = T.generate_trajectories(
+        n_trajectories, world, policy_exec, initial, terminal)
 
-    if not tjs: return False
+    if not tjs:
+        return False
     return Demonstration(tjs, policy)
 
 
@@ -93,48 +95,6 @@ def generate_hard_trajectories(world, reward, start, terminal, state_cons, actio
                                        world, policy_exec, initial, terminal))
 
     return Demonstration(tjs, policy)
-
-
-def generate_weighted_average_trajectories(world, n_r, c_r, start, terminal, weights):
-
-    # parameters
-    n_trajectories = 200
-    discount = 0.9
-
-    # set up initial probabilities for trajectory generation
-    initial = np.zeros(world.n_states)
-    initial[start] = 1.0
-
-    # generate trajectories
-    q_n, _ = RL.value_iteration(world.p_transition, n_r, discount)
-    q_c, _ = RL.value_iteration(world.p_transition, c_r, discount)
-    avg_q = q_n * weights[0] + q_c * weights[1]
-
-    policy = RL.stochastic_policy_from_q_value(world, avg_q)
-    policy_exec = T.stochastic_policy_adapter(policy)
-    tjs = list(T.generate_trajectories(n_trajectories,
-                                       world, policy_exec, initial, terminal))
-    return Demonstration(tjs, None)
-
-
-def generate_mdft_trajectories(world, n_r, c_r, start, terminal, w):
-
-    # parameters
-    n_trajectories = 200
-    discount = 0.9
-
-    # set up initial probabilities for trajectory generation
-    initial = np.zeros(world.n_states)
-    initial[start] = 1.0
-
-    # generate trajectories
-    q_n, _ = RL.value_iteration(world.p_transition, n_r, discount)
-    q_c, _ = RL.value_iteration(world.p_transition, c_r, discount)
-    policy_exec = T.mdft_policy_adapter(q_n, q_c, w=np.array(w))
-    tjs = list(T.generate_trajectories(n_trajectories,
-                                       world, policy_exec, initial, terminal))
-
-    return Demonstration(tjs, None)
 
 
 def learn_constraints(nominal_rewards, world, terminal, trajectories,
@@ -178,20 +138,57 @@ def convert_constraints_to_probs(nominal_reward, learned_params):
     return p_s, p_a, p_c
 
 
-def convert_constraints_to_probs2(n_cfg, learned_params):
-    pen = n_cfg.mdp.world.phi @ learned_params.omega
-    std_n = n_cfg.mdp.reward.std()
-    std_l = learned_params.reward.std()
-    std_pooled = np.sqrt((std_n**2 + std_l**2)/2)
-    pen = (pen - std_pooled) / std_pooled
-    p = 1 / (1 + np.exp(-pen))
-    p_s = p.mean((0, 1))
-    p_a = p.mean((0, 2))
-    p_c = np.array([0, p[:, :, n_cfg.blue].mean(),
-                    p[:, :, n_cfg.green].mean()])
-    p_s[n_cfg.blue] = np.minimum(1 - p_c[1], p_s[n_cfg.blue])
-    p_s[n_cfg.green] = np.minimum(1 - p_c[2], p_s[n_cfg.green])
-    p_s[n_cfg.mdp.start] = 0
-    p_s[n_cfg.mdp.terminal] = 0
-    p_a = {Directions.ALL_DIRECTIONS[i]: p_a[i] for i in range(8)}
-    return p_s, p_a, p_c
+##################################### Orchestrators ####################################
+# TODO: Move to orchestrator.py
+def generate_weighted_average_trajectories(world, n_r, c_r, start, terminal, w, normalize=True):
+
+    # parameters
+    n_trajectories = 200
+    discount = 0.9
+
+    # set up initial probabilities for trajectory generation
+    initial = np.zeros(world.n_states)
+    initial[start] = 1.0
+
+    # generate trajectories
+    q_n, _ = RL.value_iteration(world.p_transition, n_r, discount)
+    q_c, _ = RL.value_iteration(world.p_transition, c_r, discount)
+    if normalize:
+        q_n, q_c = statewise_norm(q_n), statewise_norm(q_c)
+    avg_q = q_n * w[0] + q_c * w[1]
+
+    policy = RL.stochastic_policy_from_q_value(world, avg_q)
+    policy_exec = T.stochastic_policy_adapter(policy)
+    tjs = list(T.generate_trajectories(n_trajectories,
+                                       world, policy_exec, initial, terminal))
+    return Demonstration(tjs, None)
+
+
+def statewise_norm(q):
+    min_ = q.min(1).reshape(-1, 1)
+    q_norm = q - min_
+    q_norm /= q_norm.max(1).reshape(-1, 1)
+    return q_norm
+
+
+def generate_mdft_trajectories(world, n_r, c_r, start, terminal, w, normalize=True):
+
+    # parameters
+    n_trajectories = 200
+    discount = 0.9
+
+    # set up initial probabilities for trajectory generation
+    initial = np.zeros(world.n_states)
+    initial[start] = 1.0
+
+    # generate trajectories
+    q_n, _ = RL.value_iteration(world.p_transition, n_r, discount)
+    q_c, _ = RL.value_iteration(world.p_transition, c_r, discount)
+    if normalize:
+        q_n, q_c = statewise_norm(q_n), statewise_norm(q_c)
+
+    policy_exec = T.mdft_policy_adapter(q_n, q_c, w=np.array(w))
+    tjs = list(T.generate_trajectories(n_trajectories,
+                                       world, policy_exec, initial, terminal))
+
+    return Demonstration(tjs, None)

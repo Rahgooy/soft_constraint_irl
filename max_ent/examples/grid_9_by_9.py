@@ -212,7 +212,7 @@ def main():
                result.color_weights, demo, c_cfg.blue, c_cfg.green, vmin=vmin, vmax=vmax)
 
     mdf_demo = generate_mdft_trajectories(
-        n.world, n.reward, result.reward, n.start, n.terminal, [0.5, 0.5])
+        n.world, n.reward, result.reward, n.start, n.terminal, [0.1, 0.9])
 
     plot_world('Learned Constrained - MDFT trajectories', learned, result.state_weights, result.action_weights,
                result.color_weights, mdf_demo, c_cfg.blue, c_cfg.green, vmin=vmin, vmax=vmax)
