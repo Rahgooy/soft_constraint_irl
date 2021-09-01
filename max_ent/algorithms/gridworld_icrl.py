@@ -14,7 +14,7 @@ import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import math
 from collections import namedtuple, defaultdict
-from logging import debug, root, DEBUG
+from logging import debug, fatal, root, DEBUG
 
 
 MDP = namedtuple('MDP', ['world', 'reward', 'terminal', 'start'])
@@ -39,7 +39,7 @@ def setup_mdp(size, feature_list, constraints,
         o += f.size
 
     for f, v, r in constraints:
-        idx = world.phi[:, :, :, offset[f]: offset[f] + f.size] == f.value2feature(v)
+        idx = world.phi[:, :, :, offset[f]                        : offset[f] + f.size] == f.value2feature(v)
         idx = idx.all(-1)
         reward[idx] += r
 
@@ -140,11 +140,11 @@ def convert_constraints_to_probs(nominal_reward, learned_params):
 
 ##################################### Orchestrators ####################################
 # TODO: Move to orchestrator.py
-def generate_weighted_average_trajectories(world, n_r, c_r, start, terminal, w, normalize=True):
-
-    # parameters
-    n_trajectories = 200
-    discount = 0.9
+def generate_weighted_average_trajectories(world, n_r, c_r, start, terminal, w,
+                                           normalize=True,
+                                           n_trajectories=200,
+                                           discount=0.9
+                                           ):
 
     # set up initial probabilities for trajectory generation
     initial = np.zeros(world.n_states)
@@ -171,11 +171,10 @@ def statewise_norm(q):
     return q_norm
 
 
-def generate_mdft_trajectories(world, n_r, c_r, start, terminal, w, normalize=True):
-
-    # parameters
-    n_trajectories = 200
-    discount = 0.9
+def generate_mdft_trajectories(world, n_r, c_r, start, terminal, w, normalize=True,
+                               n_trajectories=200,
+                               discount=0.9
+                               ):
 
     # set up initial probabilities for trajectory generation
     initial = np.zeros(world.n_states)
@@ -190,5 +189,42 @@ def generate_mdft_trajectories(world, n_r, c_r, start, terminal, w, normalize=Tr
     policy_exec = T.mdft_policy_adapter(q_n, q_c, w=np.array(w))
     tjs = list(T.generate_trajectories(n_trajectories,
                                        world, policy_exec, initial, terminal))
+
+    return Demonstration(tjs, None)
+
+
+def generate_greedy_trajectories(world, n_r, c_r, start, terminal, normalize=True,
+                                 n_trajectories=200,
+                                 discount=0.9
+                                 ):
+
+    # set up initial probabilities for trajectory generation
+    initial = np.zeros(world.n_states)
+    initial[start] = 1.0
+
+    # generate trajectories
+    q_n, _ = RL.value_iteration(world.p_transition, n_r, discount)
+    q_c, _ = RL.value_iteration(world.p_transition, c_r, discount)
+    if normalize:
+        q_n, q_c = statewise_norm(q_n), statewise_norm(q_c)
+
+    policy_exec = T.greedy_policy_adapter(q_n, q_c)
+    tjs = list(T.generate_trajectories(n_trajectories,
+                                       world, policy_exec, initial, terminal))
+
+    return Demonstration(tjs, None)
+
+
+def generate_random_trajectories(world, start, terminal, n_trajectories=200):
+
+    # set up initial probabilities for trajectory generation
+    initial = np.zeros(world.n_states)
+    initial[start] = 1.0
+
+    # generate trajectories
+
+    policy_exec = T.random_policy_adapter(world.n_actions)
+    tjs = list(T.generate_trajectories(n_trajectories,
+                                       world, policy_exec, initial, terminal, False))
 
     return Demonstration(tjs, None)

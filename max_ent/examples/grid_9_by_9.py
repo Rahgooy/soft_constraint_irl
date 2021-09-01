@@ -12,7 +12,7 @@ from max_ent.algorithms.icrl import icrl
 from max_ent.gridworld import Directions
 import max_ent.gridworld.feature as F
 import max_ent.examples.grid_plot as P
-from max_ent.algorithms.gridworld_icrl import learn_constraints, setup_mdp, \
+from max_ent.algorithms.gridworld_icrl import generate_random_trajectories, learn_constraints, setup_mdp, \
     generate_mdft_trajectories, generate_trajectories, MDP, generate_weighted_average_trajectories
 
 
@@ -211,8 +211,9 @@ def main():
     plot_world('Learned Constrained', learned, result.state_weights, result.action_weights,
                result.color_weights, demo, c_cfg.blue, c_cfg.green, vmin=vmin, vmax=vmax)
 
-    mdf_demo = generate_mdft_trajectories(
-        n.world, n.reward, result.reward, n.start, n.terminal, [0.1, 0.9])
+    # mdf_demo = generate_random_trajectories(
+    #     n.world, n.reward, result.reward, n.start, n.terminal, [0.1, 0.9])
+    mdf_demo = generate_random_trajectories(n.world, n.start, n.terminal)
 
     plot_world('Learned Constrained - MDFT trajectories', learned, result.state_weights, result.action_weights,
                result.color_weights, mdf_demo, c_cfg.blue, c_cfg.green, vmin=vmin, vmax=vmax)

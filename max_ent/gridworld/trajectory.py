@@ -113,7 +113,7 @@ def generate_trajectory(world, policy, start, final, max_len=200):
     return Trajectory(trajectory), True
 
 
-def generate_trajectories(n, world, policy, start, final):
+def generate_trajectories(n, world, policy, start, final, discard_not_feasable=False):
     """
     Generate multiple trajectories.
 
@@ -136,6 +136,8 @@ def generate_trajectories(n, world, policy, start, final):
         final: A collection of terminal states. If a trajectory reaches a
             terminal state, generation is complete and the trajectory is
             complete.
+        discard_not_feasable: Discard trajectories that not reaching the 
+            final state(s)
 
     Returns:
         A generator expression generating `n` `Trajectory` instances
@@ -153,13 +155,11 @@ def generate_trajectories(n, world, policy, start, final):
 
     list_tr = []
     for _ in range(n):
-        tr = _generate_one()
-        if not tr[1]: return False
-        list_tr.append(tr[0])
+        tr, reachable = _generate_one()
+        if reachable or not discard_not_feasable:
+            list_tr.append(tr)
     
     return list_tr
-    #return (_generate_one() for _ in range(n))
-
 
 def policy_adapter(policy):
     """
@@ -212,5 +212,20 @@ def mdft_policy_adapter(nominal_q, constrained_q, w=None, delib_t=100):
         mdft = MDFT(M, S, w, p0)
         dist = get_fixed_T_dft_dist(mdft, 1, delib_t)
         return np.argmax(dist)
+
+    return policy
+
+def greedy_policy_adapter(nominal_q, constrained_q):
+    def policy(state):
+        r = nominal_q[state]
+        c = constrained_q[state]
+        m = np.maximum(r, c)
+        return np.argmax(m)
+
+    return policy
+
+def random_policy_adapter(n_actions):
+    def policy(state):
+        return np.random.randint(0, n_actions)
 
     return policy
