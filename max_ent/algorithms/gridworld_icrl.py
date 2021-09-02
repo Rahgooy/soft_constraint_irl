@@ -39,7 +39,7 @@ def setup_mdp(size, feature_list, constraints,
         o += f.size
 
     for f, v, r in constraints:
-        idx = world.phi[:, :, :, offset[f]                        : offset[f] + f.size] == f.value2feature(v)
+        idx = world.phi[:, :, :, offset[f]: offset[f] + f.size] == f.value2feature(v)
         idx = idx.all(-1)
         reward[idx] += r
 
@@ -154,21 +154,14 @@ def generate_weighted_average_trajectories(world, n_r, c_r, start, terminal, w,
     q_n, _ = RL.value_iteration(world.p_transition, n_r, discount)
     q_c, _ = RL.value_iteration(world.p_transition, c_r, discount)
     if normalize:
-        q_n, q_c = statewise_norm(q_n), statewise_norm(q_c)
-    avg_q = q_n * w[0] + q_c * w[1]
+        policy_n = RL.stochastic_policy_from_q_value(world, q_n)
+        policy_c = RL.stochastic_policy_from_q_value(world, q_c)
 
-    policy = RL.stochastic_policy_from_q_value(world, avg_q)
+    policy = policy_n * w[0] + policy_c * w[1]
     policy_exec = T.stochastic_policy_adapter(policy)
     tjs = list(T.generate_trajectories(n_trajectories,
                                        world, policy_exec, initial, terminal))
     return Demonstration(tjs, None)
-
-
-def statewise_norm(q):
-    min_ = q.min(1).reshape(-1, 1)
-    q_norm = q - min_
-    q_norm /= q_norm.max(1).reshape(-1, 1)
-    return q_norm
 
 
 def generate_mdft_trajectories(world, n_r, c_r, start, terminal, w, normalize=True,
@@ -184,9 +177,10 @@ def generate_mdft_trajectories(world, n_r, c_r, start, terminal, w, normalize=Tr
     q_n, _ = RL.value_iteration(world.p_transition, n_r, discount)
     q_c, _ = RL.value_iteration(world.p_transition, c_r, discount)
     if normalize:
-        q_n, q_c = statewise_norm(q_n), statewise_norm(q_c)
+        policy_n = RL.stochastic_policy_from_q_value(world, q_n)
+        policy_c = RL.stochastic_policy_from_q_value(world, q_c)
 
-    policy_exec = T.mdft_policy_adapter(q_n, q_c, w=np.array(w))
+    policy_exec = T.mdft_policy_adapter(policy_n, policy_c, w=np.array(w))
     tjs = list(T.generate_trajectories(n_trajectories,
                                        world, policy_exec, initial, terminal))
 
@@ -206,9 +200,10 @@ def generate_greedy_trajectories(world, n_r, c_r, start, terminal, normalize=Tru
     q_n, _ = RL.value_iteration(world.p_transition, n_r, discount)
     q_c, _ = RL.value_iteration(world.p_transition, c_r, discount)
     if normalize:
-        q_n, q_c = statewise_norm(q_n), statewise_norm(q_c)
+        policy_n = RL.stochastic_policy_from_q_value(world, q_n)
+        policy_c = RL.stochastic_policy_from_q_value(world, q_c)
 
-    policy_exec = T.greedy_policy_adapter(q_n, q_c)
+    policy_exec = T.greedy_policy_adapter(policy_n, policy_c)
     tjs = list(T.generate_trajectories(n_trajectories,
                                        world, policy_exec, initial, terminal))
 
