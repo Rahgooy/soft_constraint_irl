@@ -163,9 +163,6 @@ def generate_constraints(size):
 def plot_statistics(df, learned_matrix, nominal_matrix, denominator, save_path, label = "avg_norm_length", label_nominal = "avg_length", n_tests=100):
 
     fig=plt.figure(figsize=(12, 7))
-    #sns.set(font_scale=1.5)
-    #sns.color_palette("white", as_cmap=True)
-    #sns.relplot(x="i", y="avg_vc", hue="type", kind="line", ci="sd", data=df);
     sns.set_style("white")
     g = sns.barplot(x="i", y=label, hue="type", data=df.loc[(df['type']!="constrained") & (df['type']!="nominal")], palette="autumn", ci=95);
     g.set_xticks(range(11)) # <--- set the ticks first
@@ -230,12 +227,12 @@ def compute_statistics(nominal_matrix, constrained_matrix, learned_matrix, mdft_
     avg_js_distance_nominal_mdft = []
     avg_js_distance_constrained_mdft = []
     
-    avg_min_nominal_length = []
+    each_min_nominal_length = []
     
     for test in range(n_tests):
         l = [trajectory.transitions() for trajectory in worlds[test]['demo_n'][0]]
         min_nominal_length = min(map(len,l))
-        avg_min_nominal_length.append(min_nominal_length)
+        each_min_nominal_length.append(min_nominal_length)
         
         n = np.reshape(nominal_matrix[test][test]['temp_matrix'], (-1,1))
         c = np.reshape(constrained_matrix[test][test]['temp_matrix'], (-1,1))
@@ -270,6 +267,80 @@ def compute_statistics(nominal_matrix, constrained_matrix, learned_matrix, mdft_
         avg_js_distance_nominal_mdft.append(distance.jensenshannon(n,q)[0])
         avg_js_distance_constrained_mdft.append(distance.jensenshannon(c,q)[0])
     
-    dict_mdft = {"i":i,"type":type_m,"avg_length":avg_length_mdft, "avg_norm_length": avg_norm_length_mdft, "avg_reward":avg_rew_mdft, "avg_norm_reward":avg_norm_rew_mdft, "avg_vc":avg_vc_mdft, "avg_norm_vc":avg_norm_vc_mdft, "avg_js_dist_nominal":avg_js_distance_nominal_mdft, "avg_js_dist_constrained":avg_js_distance_constrained_mdft, "avg_js_div_nominal":avg_js_divergence_nominal_mdft, "avg_js_div_constrained":avg_js_divergence_constrained_mdft, "avg_min_nominal_length": avg_min_nominal_length}
+    dict_mdft = {"i":i,"type":type_m,"avg_length":avg_length_mdft, "avg_norm_length": avg_norm_length_mdft, "avg_reward":avg_rew_mdft, "avg_norm_reward":avg_norm_rew_mdft, "avg_vc":avg_vc_mdft, "avg_norm_vc":avg_norm_vc_mdft, "avg_js_dist_nominal":avg_js_distance_nominal_mdft, "avg_js_dist_constrained":avg_js_distance_constrained_mdft, "avg_js_div_nominal":avg_js_divergence_nominal_mdft, "avg_js_div_constrained":avg_js_divergence_constrained_mdft, "avg_min_nominal_length": np.mean(each_min_nominal_length)}
+    
+    return  dict_mdft
+
+def compute_statistics_grid(nominal_matrix, constrained_matrix, learned_matrix, mdft_matrix, worlds, n_tests, type_m):
+    avg_length_mdft = []
+    avg_norm_length_mdft=[]
+   
+    avg_rew_mdft = []
+   
+    avg_norm_rew_mdft = []
+ 
+    avg_vc_mdft = []
+
+    avg_norm_vc_mdft = []
+
+    avg_js_divergence = []
+    avg_js_distance = []
+    
+    avg_length_nominal = []
+    avg_length_constrained = []
+    avg_rew_nominal = []
+    avg_rew_constrained = []
+    
+    avg_vc_nominal = []
+    avg_vc_constrained = []
+    
+
+    avg_js_divergence_nominal_mdft = []
+    avg_js_divergence_constrained_mdft = []
+    
+    avg_js_distance_nominal_mdft = []
+    avg_js_distance_constrained_mdft = []
+    
+    each_min_nominal_length = []
+    
+    for test in range(n_tests):
+        l = [trajectory.transitions() for trajectory in worlds[test]['demo_n'][0]]
+        min_nominal_length = min(map(len,l))
+        each_min_nominal_length.append(min_nominal_length)
+        
+        n = np.reshape(nominal_matrix[test][test]['temp_matrix'], (-1,1))
+        c = np.reshape(constrained_matrix[test][test]['temp_matrix'], (-1,1))
+        q = np.reshape(mdft_matrix[test][test]['temp_matrix'], (-1,1))
+
+        avg_length_mdft.append(mdft_matrix[test][test]['avg_length'])
+
+        avg_norm_length_mdft.append(mdft_matrix[test][test]['avg_length']/min_nominal_length)#nominal_matrix[test][test]['avg_length'])
+        
+
+        avg_rew_mdft.append(mdft_matrix[test][test]['avg_reward'])
+       
+        avg_norm_rew_mdft.append(mdft_matrix[test][test]['avg_reward']/learned_matrix[test][test]['avg_reward'])
+
+        avg_vc_mdft.append(mdft_matrix[test][test]['avg_violated'])
+
+        avg_norm_vc_mdft.append(mdft_matrix[test][test]['avg_violated']/learned_matrix[test][test]['avg_violated'])
+       
+        #avg_js_divergence.append(js_divergence(p,q))
+        #avg_js_distance.append(distance.jensenshannon(p,q))
+
+        avg_length_nominal.append(nominal_matrix[test][test]['avg_length'])
+        avg_length_constrained.append(constrained_matrix[test][test]['avg_length'])
+        avg_rew_nominal.append(nominal_matrix[test][test]['avg_reward'])
+        avg_rew_constrained.append(constrained_matrix[test][test]['avg_reward'])
+        avg_vc_nominal.append(nominal_matrix[test][test]['avg_violated'])
+        avg_vc_constrained.append(constrained_matrix[test][test]['avg_violated'])
+
+        avg_js_divergence_nominal_mdft.append(js_divergence(q,n)[0])
+        avg_js_divergence_constrained_mdft.append(js_divergence(q,c)[0])
+
+        avg_js_distance_nominal_mdft.append(distance.jensenshannon(n,q)[0])
+        avg_js_distance_constrained_mdft.append(distance.jensenshannon(c,q)[0])
+    
+    dict_mdft = {"type":type_m,"avg_length":avg_length_mdft, "avg_norm_length": avg_norm_length_mdft, "avg_reward":avg_rew_mdft, "avg_norm_reward":avg_norm_rew_mdft, "avg_vc":avg_vc_mdft, "avg_norm_vc":avg_norm_vc_mdft, "avg_js_dist_nominal":avg_js_distance_nominal_mdft, "avg_js_dist_constrained":avg_js_distance_constrained_mdft, "avg_js_div_nominal":avg_js_divergence_nominal_mdft, "avg_js_div_constrained":avg_js_divergence_constrained_mdft, "avg_min_nominal_length": np.mean(each_min_nominal_length)}
     
     return  dict_mdft
