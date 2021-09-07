@@ -2,7 +2,7 @@ import json
 
 from max_ent.gridworld.gridworld import Directions
 from max_ent.gridworld.trajectory import Trajectory
-from max_ent.algorithms.gridworld_icrl import Demonstration, MDP, convert_constraints_to_probs, convert_constraints_to_probs2, generate_hard_trajectories, generate_trajectories, learn_constraints
+from max_ent.algorithms.gridworld_icrl import Demonstration, MDP, convert_constraints_to_probs, generate_hard_trajectories, generate_trajectories, learn_constraints
 import numpy as np
 from max_ent.examples.grid_9_by_9 import config_world, plot_world
 import matplotlib.pyplot as plt
