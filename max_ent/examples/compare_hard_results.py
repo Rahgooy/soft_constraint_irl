@@ -96,7 +96,7 @@ def draw_diagram(scobee, our, y_label, lens, thresholds, idx, draw_scobee=True):
         draw_line(lens, scobee.mean(0), scobee.std(0), 'blue', 'Scobee', lens)
     for i in idx:
         draw_line(lens, our[i].mean(0), our[i].std(0),
-                  colors[i], f'Proposed($p\geq{thresholds[i]}$)', lens)
+                  colors[i], f'MESC-IRL($p\geq{thresholds[i]}$)', lens)
     plt.legend()
     plt.xlabel('Number of Demonstrations')
     plt.ylabel(y_label)

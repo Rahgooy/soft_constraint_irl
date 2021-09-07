@@ -187,7 +187,7 @@ def draw_result(jsd_list, az_jsd, plot_list, exp_name):
 
     draw_metric(lens, jsd_list['mean'].reshape(1, -1),
                 np.sqrt(jsd_list['var']).reshape(1, -1), 'JS-Divergence',
-                ['Proposed method'], f'{exp_name}_jsd', az_jsd)
+                ['MESC-IRL'], f'{exp_name}_jsd', az_jsd)
 
     for k in plot_list:
         p = plot_list[k]
