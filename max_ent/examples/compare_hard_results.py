@@ -93,10 +93,10 @@ def draw_line(x, y, std, color, label, lens):
 def draw_diagram(scobee, our, y_label, lens, thresholds, idx, draw_scobee=True):
     plt.figure()
     if draw_scobee:
-        draw_line(lens, scobee.mean(0), scobee.std(0), 'blue', 'Scobee', lens)
+        draw_line(lens, scobee.mean(0), scobee.std(0), 'blue', 'Scobee($d_{kl} = 0.1$)', lens)
     for i in idx:
         draw_line(lens, our[i].mean(0), our[i].std(0),
-                  colors[i], f'MESC-IRL($p\geq{thresholds[i]}$)', lens)
+                  colors[i], f'MESC-IRL($\zeta\geq{thresholds[i]}$)', lens)
     plt.legend()
     plt.xlabel('Number of Demonstrations')
     plt.ylabel(y_label)
@@ -129,12 +129,20 @@ def main():
             true_cons, our_cons, true_demo, our_hard_demo, n_set, n_len)
 
     draw_diagram(s_fp, o_fp, 'False Positive Rate', lens,
-                 thresholds, idx, draw_scobee=False)
+                 thresholds, idx, draw_scobee=True)
     plt.savefig('./reports/hard/hard_all_fp.pdf')
 
     draw_diagram(s_kl, o_kl, 'KL-Divergence', lens,
-                 thresholds, idx, draw_scobee=False)
+                 thresholds, idx, draw_scobee=True)
     plt.savefig('./reports/hard/hard_all_kl.pdf')
+
+    draw_diagram(s_fp, o_fp, 'False Positive Rate', lens,
+                 thresholds, idx, draw_scobee=False)
+    plt.savefig('./reports/hard/hard_ours_fp.pdf')
+
+    draw_diagram(s_kl, o_kl, 'KL-Divergence', lens,
+                 thresholds, idx, draw_scobee=False)
+    plt.savefig('./reports/hard/hard_ours_kl.pdf')
 
     draw_diagram(s_fp, o_fp, 'False Positive Rate',
                  lens, thresholds, [2], draw_scobee=True)
