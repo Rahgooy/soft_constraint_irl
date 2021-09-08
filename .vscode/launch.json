@@ -5,13 +5,21 @@
   "version": "0.2.0",
   "configurations": [
 
+
+
     {
       "name": "Learn soft constraints",
       "type": "python",
       "request": "launch",
       "module": "max_ent.examples.learn_soft_constraints"
     },
-
+    {
+      "name": "MDFT vs WA",
+      "type": "python",
+      "request": "launch",
+      "module": "max_ent.examples.mdft_vs_wa",
+      "justMyCode": false
+    },
     {
       "name": "Learn hard constraints",
       "type": "python",
