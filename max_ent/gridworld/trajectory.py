@@ -35,30 +35,6 @@ class Trajectory:
         """
         return list(self._t)
 
-    def states(self):
-        """
-        The states visited in this trajectory.
-
-        Returns:
-            All states visited in this trajectory as iterator in the order
-            they are visited. If a state is being visited multiple times,
-            the iterator will return the state multiple times according to
-            when it is visited.
-        """
-        return map(lambda x: x[0], chain(self._t, [(self._t[-1][2], 0, 0)]))
-
-    def state_actions(self):
-        """
-        The states visited in this trajectory.
-
-        Returns:
-            All states visited in this trajectory as iterator in the order
-            they are visited. If a state is being visited multiple times,
-            the iterator will return the state multiple times according to
-            when it is visited.
-        """
-        return map(lambda x: (x[0], x[1]), chain(self._t, [(self._t[-1][2], 0, 0)]))
-
     def __repr__(self):
         return "Trajectory({})".format(repr(self._t))
 

@@ -72,7 +72,7 @@ def forward(p_transition, p_initial, policy, terminal, eps=1e-5):
 def initial_probabilities(n_states, n_actions, trajectories):
     initial = np.zeros((n_states, n_actions))
     for t in trajectories:
-        s, a = list(t.state_actions())[0]
+        s, a, _ = list(t.transitions())[0]
         initial[s, a] += 1
     return initial / len(trajectories)
 

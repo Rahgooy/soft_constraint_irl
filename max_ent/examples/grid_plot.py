@@ -71,7 +71,10 @@ def plot_trajectory(ax, world, trajectory, **kwargs):
         `pyplot.tripcolor`.
 
     """
-    xy = [world.state_index_to_point(s) for s in trajectory.states()]
+    xy = [world.state_index_to_point(s) for s, _, _ in trajectory.transitions()] 
+
+    if len(trajectory.transitions()):
+        xy += [world.state_index_to_point(trajectory.transitions()[-1][-1])]
     x, y = zip(*xy)
 
     return ax.plot(x, y, **kwargs)

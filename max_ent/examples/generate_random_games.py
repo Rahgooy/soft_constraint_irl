@@ -19,8 +19,7 @@ def generate_random():
         for t in trj:
             violation = False
             last = None
-            for s, a in t.state_actions():
-                s_ = c_cfg.mdp.world.state_index_transition(s, a)
+            for s, a, s_ in t.transitions():
                 last = s
                 if c_cfg.mdp.reward[s, a, s_] < -10:  # Violation
                     violation = True

@@ -107,8 +107,8 @@ def learn_game(d, g_trajs, thresholds):
 
 def serlialize_demo(demo):
     return {
-        'state_seq': [[int(s) for s in t.states()] for t in demo.trajectories],
-        'action_seq': [[int(a) for _, a in t.state_actions()] for t in demo.trajectories]
+        'state_seq': [[int(s) for s, _, _ in t.transitions()] for t in demo.trajectories],
+        'action_seq': [[int(a) for _, a, _ in t.transitions()] for t in demo.trajectories]
     }
 
 

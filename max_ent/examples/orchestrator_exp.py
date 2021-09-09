@@ -1,3 +1,4 @@
+from max_ent.algorithms.gridworld_icrl import generate_optimal_trajectories
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvas
@@ -16,7 +17,7 @@ N_TRAJ = 100
 def dist(demo):
     dist = np.ones((81, 8)) * 1e-6
     for t in demo:
-        for s, a in t.state_actions():
+        for s, a, _ in t.transitions():
             dist[s, a] += 1
     return dist/dist.sum().reshape(-1, 1)
 
@@ -119,9 +120,9 @@ def get_traj_stats(traj, reward, constraints):
     return avg_length, avg_pen, violations
 
 
-def get_stats(demo, traj, reward, constraints):
+def get_stats(demo, traj, reward, constraints, len_baseline, pen_baseline,):
     avg_length, avg_pen, avg_vio = get_traj_stats(traj, reward, constraints)
-    return avg_length, avg_pen, avg_vio, jsd(demo, traj)
+    return avg_length / len_baseline, avg_pen / pen_baseline, avg_vio, jsd(demo, traj)
 
 
 def get_length_baselines(demo_n, demo_l):
@@ -145,16 +146,17 @@ def get_penalty_baselines(demo_n, demo_l, demo_g, reward):
 
 
 def get_violation_baselines(demo_n, demo_l, demo_g, constraints):
+    color_const = constraints['blue'].tolist() + constraints['green'].tolist()
     def v(t):
         cs, cc, ca = 0, 0, 0
-        for s, a in t.state_actions():
+        for s, a, _ in t.transitions():
             if s in constraints['cs']:
                 cs += 1
 
             if a in constraints['ca_idx']:
                 ca += 1
 
-            if s in (constraints['blue'] + constraints['green']):
+            if s in color_const:
                 cc += 1
         return cs + ca + cc
     v_n = sum([v(t) for t in demo_n]) / len(demo_n)
@@ -177,8 +179,8 @@ def get_orchestrator_results(learned):
         demo = d['demo_c']
         aml, anl, acl = get_length_baselines(d['demo_n'], d['demo_l'])
         avg_min_len += aml
-        avg_n_len += anl
-        avg_c_len += acl
+        avg_n_len += anl / aml
+        avg_c_len += acl / aml
 
         demo_g = G.generate_greedy_trajectories(n.world, n.reward, d['learned_params'].reward,
                                                 n.start, n.terminal,
@@ -186,9 +188,9 @@ def get_orchestrator_results(learned):
 
         p_n, p_l, p_g = get_penalty_baselines(
             d['demo_n'], d['demo_l'], demo_g, l.reward)
-        avg_n_pen += p_n
+        avg_n_pen += p_n / p_l
         avg_c_pen += p_l
-        avg_g_pen += p_g
+        avg_g_pen += p_g / p_l
 
         v_n, v_l, v_g = get_violation_baselines(
             d['demo_n'], d['demo_l'], demo_g, d['constraints'])
@@ -201,12 +203,13 @@ def get_orchestrator_results(learned):
             wa_traj = G.generate_weighted_average_trajectories(n.world, n.reward, d['learned_params'].reward,
                                                                n.start, n.terminal, w,
                                                                n_trajectories=N_TRAJ).trajectories
-            wa[i, j] = get_stats(demo, wa_traj, l.reward, d['constraints'])
+            wa[i, j] = get_stats(demo, wa_traj, l.reward, d['constraints'], aml, p_l)
 
             mdft_traj = G.generate_mdft_trajectories(n.world, n.reward, d['learned_params'].reward,
                                                      n.start, n.terminal, w,
                                                      n_trajectories=N_TRAJ).trajectories
-            mdft[i, j] = get_stats(demo, mdft_traj, l.reward, d['constraints'])
+            mdft[i, j] = get_stats(demo, mdft_traj, l.reward, d['constraints'], aml, p_l)
+
 
     avg_min_len /= n_tests
     avg_n_len /= n_tests
@@ -267,17 +270,17 @@ def main():
         wa, mdft, aml, anl, acl, anp, acp, agp, anv, acv, agv = get_orchestrator_results(
             learned)
 
-        draw_metric(wa[:, :, 0] / aml, mdft[:, :, 0] / aml, [aml/aml, anl/aml, acl/aml],
+        draw_metric(wa[:, :, 0], mdft[:, :, 0], [1, anl, acl],
                     'Avg Norm. Length', ['WA', 'MDFT', 'Shortest Path', 'Nominal', 'Constrained'], 'length')
 
-        draw_metric(wa[:, :, 1] / acp, mdft[:, :, 1] / acp, [anp/acp, acp/acp, agp/acp],
+        draw_metric(wa[:, :, 1], mdft[:, :, 1], [anp, 1, agp],
                     'Avg Norm. Penalty', ['WA', 'MDFT', 'Nominal', 'Constrained', 'Greedy'], 'penalty')
 
         draw_metric(wa[:, :, 2], mdft[:, :, 2], [anv, acv, agv],
                     'Avg Num Violated Constraints', ['WA', 'MDFT', 'Nominal', 'Constrained', 'Greedy'], 'violations')
 
         draw_metric(wa[:, :, 3], mdft[:, :, 3], [],
-                    'JS-Divergence', ['WA', 'MDFT'], 'jsd')
+                    'Avg JS-Divergence', ['WA', 'MDFT'], 'jsd')
         print('.')
 
 

@@ -39,7 +39,8 @@ def setup_mdp(size, feature_list, constraints,
         o += f.size
 
     for f, v, r in constraints:
-        idx = world.phi[:, :, :, offset[f]: offset[f] + f.size] == f.value2feature(v)
+        idx = world.phi[:, :, :, offset[f]
+            : offset[f] + f.size] == f.value2feature(v)
         idx = idx.all(-1)
         reward[idx] += r
 
@@ -67,6 +68,34 @@ def generate_trajectories(world, reward, start, terminal, n_trajectories=200):
     if not tjs:
         return False
     return Demonstration(tjs, policy)
+
+
+def generate_optimal_trajectories(world, reward, start, terminal, n_trajectories=200):
+    """
+    Generate some "expert" trajectories.
+    """
+    # parameters
+    discount = 0.9
+
+    # set up initial probabilities for trajectory generation
+    initial = np.zeros(world.n_states)
+    initial[start] = 1.0
+
+    # generate trajectories
+    policy = ICRL.backward_causal(
+        world.p_transition, reward, terminal, discount)
+    # Convert to deterministic policy by making prob. of max = 1
+    idx = np.argmax(policy, 1).reshape(-1, 1)
+    policy[:, :] = 0
+    np.put_along_axis(policy, idx, 1, axis=1)
+
+    policy_exec = T.stochastic_policy_adapter(policy)
+    tjs = T.generate_trajectories(
+        n_trajectories, world, policy_exec, initial, terminal)
+
+    if not tjs:
+        return False
+    return tjs
 
 
 def generate_hard_trajectories(world, reward, start, terminal, state_cons, action_cons, n_trajectories=200):

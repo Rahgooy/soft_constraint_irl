@@ -27,7 +27,7 @@ p_thresholds = [0.01, 0.05, 0.1, 0.2]
 def dist(demo):
     dist = np.ones((81, 8)) * 1e-6
     for t in demo:
-        for s, a in t.state_actions():
+        for s, a, _ in t.transitions():
             dist[s, a] += 1
     return dist/dist.sum().reshape(-1, 1)
 
