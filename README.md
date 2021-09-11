@@ -38,11 +38,6 @@ After learning, run the following to generate the reports (in `./reports/soft/` 
   python -m max_ent.examples.compare_soft_results
 ```
 
-Here are the results we obtained:
-<embed src="random_data_10_deter_count_over_soft.pdf" type="application/pdf">
-
-![fp](/reports/soft/random_data_10_deter_count_over_soft.pdf)
-
 ### Orchestration
 
 Run the notebook in `./notebooks/new_metrics.ipynb` .
