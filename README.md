@@ -1,4 +1,4 @@
-# Max Entropy Constraint Inference for Inverse Reinforcement Learning
+# Max Entropy Soft Constraint Inverse Reinforcement Learning
 
 You can find some examples from the grid-world in the notebooks folder.
 
