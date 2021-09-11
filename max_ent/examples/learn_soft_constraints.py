@@ -7,6 +7,7 @@ from max_ent.gridworld import Directions
 from max_ent.algorithms.gridworld_icrl import ICRL_Result, learn_constraints, convert_constraints_to_probs, generate_trajectories, MDP
 import json
 import pickle
+from pathlib import Path
 
 lens = list(range(1, 10)) + list(range(10, 101, 10))
 
@@ -44,6 +45,8 @@ def run_game(d, p_slip):
 
 
 def run(data_file, out_path, deterministic):
+    out_path = Path(out_path)
+    out_path.parent.mkdir(exist_ok=True, parents=True)
     p_slip = 0 if deterministic else 0.1
     with open(data_file) as f:
         data = json.load(f)
@@ -51,7 +54,7 @@ def run(data_file, out_path, deterministic):
     for d in data:
         results.append(run_game(d, p_slip))
         print(f'Saving checkpoint game {d["game"]}')
-        with open(out_path, 'wb') as f:
+        with out_path.open('wb') as f:
             pickle.dump(results, f)
 
 

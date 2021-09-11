@@ -104,6 +104,7 @@ def draw_diagram(scobee, our, y_label, lens, thresholds, idx, draw_scobee=True):
 
 
 def main():
+    Path('./reports/hard/').mkdir(exist_ok=True, parents=True)
     true_trj = load_data("./data/scobee_example_trajectories.json")
     true_data = load_data("./data/scobee_example_data.json")
     scobee = load_data("./data/scobee_results_scobee_example.json")

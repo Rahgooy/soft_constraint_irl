@@ -1,5 +1,5 @@
 import json
-
+from pathlib import Path
 from max_ent.gridworld.gridworld import Directions
 from max_ent.gridworld.trajectory import Trajectory
 from max_ent.algorithms.gridworld_icrl import Demonstration, MDP, convert_constraints_to_probs, generate_hard_trajectories, generate_trajectories, learn_constraints
@@ -35,8 +35,10 @@ def main():
                     cons[i].append(learned[i, l, t]['constraints'])
                     soft_demos[i].append(learned[i, l, t]['soft_demo'])
                     hard_demos[i].append(learned[i, l, t]['hard_demo'])
-
-            with open(f'results/hard/our_results_scobee_example_t{t}.json', 'w') as f:
+                    
+            path = Path(f'results/hard/our_results_scobee_example_t{t}.json')
+            path.parent.mkdir(exist_ok=True, parents=True)
+            with path.open('w') as f:
                 json.dump([{
                     'id': d['game'],
                     'learned_constraints': cons,

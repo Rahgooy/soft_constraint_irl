@@ -8,6 +8,7 @@ from max_ent.algorithms.gridworld_icrl import ICRL_Result, learn_constraints, co
 import json
 import pickle
 from scipy import stats
+from pathlib import Path
 
 PlotSetting = namedtuple('PlotSetting', [
     'filter', 'type', 'name', 'p_thresholds', 'count', 'mae'])
@@ -78,6 +79,7 @@ def get_probs(nominal_reward, result):
 
 
 def get_results(d, r, p_slip):
+    Path('./reports/soft/').mkdir(exist_ok=True, parents=True)
     np.random.seed(123)
     n, c, cs, ca_idx, cc = get_configs(d, p_slip)
 
