@@ -33,6 +33,13 @@ def dist(demo):
     return dist/dist.sum().reshape(-1, 1)
 
 
+def kl(true, x):
+    true_dist = dist(true)
+    x_dist = dist(x)
+    kl = true_dist * np.log(true_dist/x_dist)
+    return kl.sum()
+
+
 def jsd(x, y):
     def kl(p, q):
         kl = p * np.log2(p/q)
@@ -97,14 +104,14 @@ def get_results(d, r, p_slip):
         c.world, c.reward, c.start, c.terminal, n_trajectories=100)
     az_demo = generate_trajectories(
         c.world, az_result.reward, n.start, n.terminal, n_trajectories=100)
-    az_jsd = jsd(demo.trajectories, az_demo.trajectories)
+    az_kl = kl(demo.trajectories, az_demo.trajectories)
 
     N = len(r)
     plot_list = {k: {
         'mae': [np.zeros((N, len(lens))) for _ in p_thresholds],
         'count': [np.zeros((N, len(lens))) for _ in p_thresholds],
     } for k in plots}
-    jsd_list = np.zeros((N, len(lens)))
+    kl_list = np.zeros((N, len(lens)))
 
     for i in range(N):
         for j, result in enumerate(r[i]):
@@ -118,7 +125,7 @@ def get_results(d, r, p_slip):
                 n.world, learned.reward, n.start, n.terminal, n_trajectories=100)
 
             p_learned = get_probs(n.reward, result)
-            jsd_list[i, j] = jsd(demo.trajectories, learned_demo.trajectories)
+            kl_list[i, j] = kl(demo.trajectories, learned_demo.trajectories)
             for plt_s in plot_list:
                 plt_r = plot_list[plt_s]
                 m = plt_r['mae']
@@ -130,7 +137,7 @@ def get_results(d, r, p_slip):
                     cnt[k][i, j] = count(true_result.omega,
                                          p_true, p_learned, plt_s.filter, plt_s.type, eps=t)
 
-    return jsd_list, plot_list, az_jsd
+    return kl_list, plot_list, az_kl
 
 
 def get_configs(d, p_slip):
@@ -176,7 +183,6 @@ def draw_metric(x, y, sem, y_label, labels, filename, az=None):
         plt.axhline(y=az, color='r', ls='--', label='no constraint prediction')
         plt.legend()
 
-
     plt.xlabel('Number of Demonstrations')
     plt.ylabel(y_label)
 
@@ -185,11 +191,11 @@ def draw_metric(x, y, sem, y_label, labels, filename, az=None):
     plt.close()
 
 
-def draw_result(jsd_list, az_jsd, plot_list, exp_name):
+def draw_result(kl_list, az_kl, plot_list, exp_name):
 
-    draw_metric(lens, jsd_list['mean'].reshape(1, -1),
-                np.sqrt(jsd_list['var']).reshape(1, -1), 'JS-Divergence',
-                ['MESC-IRL'], f'{exp_name}_jsd', az_jsd)
+    draw_metric(lens, kl_list['mean'].reshape(1, -1),
+                np.sqrt(kl_list['var']).reshape(1, -1), 'KL-Divergence',
+                ['MESC-IRL'], f'{exp_name}_kl', az_kl)
 
     for k in plot_list:
         p = plot_list[k]
@@ -235,19 +241,19 @@ def draw_reports(name, deter):
     with open(f'results/soft/{name}.pkl', 'rb') as f:
         results = pickle.load(f)
 
-    jsd_list = {'mean': 0, 'var': 0}
+    kl_list = {'mean': 0, 'var': 0}
     plt_list = {}
     n_games = len(results)
     n_thresholds = len(p_thresholds)
-    az_jsd = 0
+    az_kl = 0
 
     for i, r in enumerate(results):
-        jsd_, plt_result, az_ = get_results(data[i], r, p_slip)
-        jsd_list['mean'] += jsd_.mean(0) / n_games
-        az_jsd += az_ / n_games
+        kl_, plt_result, az_ = get_results(data[i], r, p_slip)
+        kl_list['mean'] += kl_.mean(0) / n_games
+        az_kl += az_ / n_games
         # convert to variance for pooled st calculation. Equal sample sizes
         # st_pooling**2 = (st_1**2 + ... + st_n**2)/k, k is the number of samples
-        jsd_list['var'] += stats.sem(jsd_, 0) ** 2 / n_games
+        kl_list['var'] += stats.sem(kl_, 0) ** 2 / n_games
 
         for k in plt_result:
             r = plt_result[k]
@@ -263,7 +269,7 @@ def draw_reports(name, deter):
                     plt_list[k][metric]['var'][i] += stats.sem(
                         r[metric][i]) ** 2 / n_games
 
-    draw_result(jsd_list, az_jsd, plt_list, name)
+    draw_result(kl_list, az_kl, plt_list, name)
 
 
 def main():
