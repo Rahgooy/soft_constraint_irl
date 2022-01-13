@@ -1,4 +1,4 @@
-# Max Entropy Constraint Inference for Inverse Reinforcement Learning
+# Max Entropy Soft Constraint Inverse Reinforcement Learning
 
 You can find some examples from the grid-world in the notebooks folder.
 
@@ -37,11 +37,6 @@ After learning, run the following to generate the reports (in `./reports/soft/` 
 ```bash
   python -m max_ent.examples.compare_soft_results
 ```
-
-Here are the results we obtained:
-<embed src="random_data_10_deter_count_over_soft.pdf" type="application/pdf">
-
-![fp](/reports/soft/random_data_10_deter_count_over_soft.pdf)
 
 ### Orchestration
 
