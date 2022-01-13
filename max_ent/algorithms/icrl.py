@@ -90,7 +90,7 @@ def ef_from_trajectories(features, trajectories):
 
 
 def icrl(nominal_rewards, p_transition, features, terminal, trajectories, optim, init, discount,
-         eps=1e-4, eps_error=1e-2, burnout=100, max_iter=10000, max_penalty=200):
+         eps=1e-4, eps_error=1e-2, burnout=100, max_iter=10000, max_penalty=200, log=None, initial_omega=None):
 
     n_states, n_actions, _, n_features = features.shape
 
@@ -103,6 +103,8 @@ def icrl(nominal_rewards, p_transition, features, terminal, trajectories, optim,
     nominal_rewards = np.array(nominal_rewards)
 
     omega = init(n_features)
+    if initial_omega is not None:
+        omega = initial_omega.copy()
     delta = mean_error = np.inf
 
     optim.reset(omega)
@@ -110,7 +112,7 @@ def icrl(nominal_rewards, p_transition, features, terminal, trajectories, optim,
     best = None
     best_error = 100000
     while epoch <= burnout or (delta > eps and mean_error > eps_error and epoch < max_iter):
-        theta_old = omega.copy()
+        omega_old = omega.copy()
 
         # compute per-state reward
         reward = nominal_rewards - features @ omega
@@ -138,7 +140,19 @@ def icrl(nominal_rewards, p_transition, features, terminal, trajectories, optim,
             omega = omega * (max_penalty / omega.max())
             optim.reset(omega)
 
-        delta = np.max(np.abs(theta_old - omega))
+        delta = np.max(np.abs(omega_old - omega))
+
+        if log is not None and type(log) == list:
+            log.append({
+                'omega': omega_old.copy(),
+                'delta': delta,
+                'epoch': epoch,
+                'mean_error': mean_error,
+                'is_best': mean_error == best_error,
+                'best_omega': omega_old.copy() if best is None else best.copy(),
+                'best_reward': reward
+            })
+
         if epoch % 100 == 0:
             print(f'MAE(best): {min(mean_error, best_error): 0.15f}')
         epoch += 1

@@ -5,6 +5,12 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "transfer",
+      "type": "python",
+      "request": "launch",
+      "module": "max_ent.examples.transfer"
+    },
+    {
       "name": "Orchestrator",
       "type": "python",
       "request": "launch",
