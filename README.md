@@ -18,7 +18,7 @@ To learn the constraints run:
   python -m max_ent.examples.learn_hard_constraints
 ```
 
-After learning, run the following to generate the reports (in `./reports/hard/` folder):
+After learning, run the following to generate the reports (in [`./reports/hard/`](reports/hard) folder):
 
 ```bash
   python -m max_ent.examples.compare_hard_results
@@ -32,11 +32,19 @@ To learn the constraints run:
   python -m max_ent.examples.learn_soft_constraints
 ```
 
-After learning, run the following to generate the reports (in `./reports/soft/` folder):
+After learning, run the following to generate the reports (in [`./reports/soft/`](reports/soft) folder):
 
 ```bash
   python -m max_ent.examples.compare_soft_results
 ```
+
+### Transfer Learning
+To run the transfer learning experiments and generate the results use:
+
+```bash
+  python -m max_ent.examples.transfer
+```
+The generated reports can be found in [`./reports/transfer/`](reports/transfer) folder.
 
 ### Orchestration
 
